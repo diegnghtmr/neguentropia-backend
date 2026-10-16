@@ -13,10 +13,32 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {"corpus.manifest=", "corpus.allowed-origins="})
 class HealthEndpointTest {
     @LocalServerPort
     private int port;
+
+    @Test
+    void unavailableCorpusReturnsSanitized503AndCorsIsClosedByDefault() throws Exception {
+        try (var client = HttpClient.newHttpClient()) {
+            for (String path : new String[]{"/api/papers", "/api/papers/paper-01"}) {
+                var response = client.send(HttpRequest.newBuilder()
+                        .uri(URI.create("http://127.0.0.1:" + port + path)).build(),
+                        HttpResponse.BodyHandlers.ofString());
+                assertEquals(503, response.statusCode());
+                assertEquals("{\"code\":\"CORPUS_UNAVAILABLE\",\"message\":\"Corpus is unavailable.\"}", response.body());
+            }
+            var response = client.send(HttpRequest.newBuilder()
+                    .uri(URI.create("http://127.0.0.1:" + port + "/api/health"))
+                    .header("Origin", "http://127.0.0.1:4174")
+                    .header("Access-Control-Request-Method", "GET")
+                    .method("OPTIONS", HttpRequest.BodyPublishers.noBody()).build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertEquals(403, response.statusCode());
+            assertTrue(response.headers().firstValue("Access-Control-Allow-Origin").isEmpty());
+        }
+    }
 
     @Test
     void reportsProcessUpWithoutClaimingCorpusReadiness() throws Exception {
