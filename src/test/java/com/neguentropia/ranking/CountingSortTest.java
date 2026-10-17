@@ -1,0 +1,61 @@
+package com.neguentropia.ranking;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class CountingSortTest {
+    private static List<TermFrequency> terms(String... pairs) {
+        var list = new ArrayList<TermFrequency>();
+        for (String pair : pairs) {
+            var parts = pair.split(":");
+            list.add(new TermFrequency(parts[0], Long.parseLong(parts[1])));
+        }
+        return list;
+    }
+
+    @Test void sortsTheDesignExampleDescendingAndKeepsTiesInInputOrder() {
+        assertEquals(terms("d:21", "a:12", "c:12", "f:8", "b:3", "e:3"),
+                CountingSort.sortDescending(terms("a:12", "b:3", "c:12", "d:21", "e:3", "f:8")));
+    }
+    @Test void allEqualFrequenciesKeepTheInputOrder() {
+        assertEquals(terms("x:2", "y:2", "z:2"), CountingSort.sortDescending(terms("x:2", "y:2", "z:2")));
+    }
+    @Test void emptyInputReturnsAnEmptyList() {
+        assertEquals(List.of(), CountingSort.sortDescending(List.of()));
+    }
+    @Test void singleTermIsReturnedUnchanged() {
+        assertEquals(terms("solo:7"), CountingSort.sortDescending(terms("solo:7")));
+    }
+    @Test void outputIsAPermutationOfEveryInputRecord() {
+        var input = terms("a:4", "b:1", "c:9", "d:4", "e:1", "f:2", "g:9");
+        var output = CountingSort.sortDescending(input);
+        assertEquals(input.size(), output.size());
+        var remaining = new HashMap<TermFrequency, Integer>();
+        for (var entry : input) remaining.merge(entry, 1, Integer::sum);
+        for (var entry : output) remaining.merge(entry, -1, Integer::sum);
+        assertTrue(remaining.values().stream().allMatch(count -> count == 0));
+        for (int i = 1; i < output.size(); i++) {
+            assertTrue(output.get(i - 1).frequency() >= output.get(i).frequency());
+        }
+    }
+    @Test void doesNotModifyTheInputAndReturnsAnImmutableList() {
+        var input = terms("a:1", "b:3");
+        var copy = List.copyOf(input);
+        var output = CountingSort.sortDescending(input);
+        assertEquals(copy, input);
+        assertThrows(UnsupportedOperationException.class, () -> output.add(new TermFrequency("c", 1)));
+    }
+    @Test void rejectsInvalidInput() {
+        assertThrows(NullPointerException.class, () -> CountingSort.sortDescending(null));
+        assertThrows(NullPointerException.class, () -> CountingSort.sortDescending(Arrays.asList(new TermFrequency("a", 1), null)));
+        assertThrows(IllegalArgumentException.class, () -> CountingSort.sortDescending(terms("a:1", "a:2")));
+    }
+    @Test void rejectsARangeThatCannotBeAllocatedInsteadOfFallingBack() {
+        assertThrows(IllegalArgumentException.class,
+                () -> CountingSort.sortDescending(List.of(new TermFrequency("huge", Integer.MAX_VALUE))));
+    }
+}
