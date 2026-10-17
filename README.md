@@ -56,6 +56,10 @@ Una configuración ausente, ilegible, inválida o parcial deja el corpus complet
 
 Las pruebas usan manifiestos de veinte registros **sintéticos** en estado temporal aislado; no acreditan la integración con los datos reales. Incluyen validación fail-closed, preparación Unicode, HTTP, CORS permitido/rechazado/cerrado por defecto y regresión del health sin corpus. La integración real entre aplicaciones y la verificación independiente siguen siendo comprobaciones separadas; esta unidad no cierra la fase de bases.
 
+## Validación de la base F1
+
+La [validación técnica del backend](docs/validation/f1-backend.md) contrasta requisitos, diseño y contrato con el código y las pruebas. Explica qué validaciones son necesarias, qué optimizaciones no están justificadas y los límites de la ejecución observada. No añade capas ni algoritmos de fases posteriores.
+
 ## Contenido del repositorio
 
 Versionar fuentes, pruebas, wrapper, configuración de build, Dockerfile y documentación técnica. No versionar credenciales, cachés, resultados de build ni instrucciones/notas privadas. `.env.example`, si se incorpora, debe contener únicamente valores ficticios. Los directorios de datos `/corpus/` y `/models/` están excluidos: los permisos de uso y publicación se comprueban antes de cualquier transferencia. Ignorar un archivo no elimina versiones anteriores ni sustituye la revisión de los archivos preparados.
