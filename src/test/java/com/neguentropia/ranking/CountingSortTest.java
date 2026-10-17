@@ -57,5 +57,7 @@ class CountingSortTest {
     @Test void rejectsARangeThatCannotBeAllocatedInsteadOfFallingBack() {
         assertThrows(IllegalArgumentException.class,
                 () -> CountingSort.sortDescending(List.of(new TermFrequency("huge", Integer.MAX_VALUE))));
+        assertThrows(IllegalArgumentException.class,
+                () -> CountingSort.sortDescending(List.of(new TermFrequency("largest", Long.MAX_VALUE))));
     }
 }

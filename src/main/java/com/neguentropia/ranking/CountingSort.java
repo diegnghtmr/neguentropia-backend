@@ -19,7 +19,8 @@ public final class CountingSort {
         Objects.requireNonNull(entries, "entries");
         if (entries.isEmpty()) return List.of();
         long maxFrequency = validateAndFindMaximum(entries);
-        if (maxFrequency + 1 > MAX_ARRAY_LENGTH) {
+        // Compare against length - 1: maxFrequency + 1 would overflow at Long.MAX_VALUE.
+        if (maxFrequency > MAX_ARRAY_LENGTH - 1) {
             throw new IllegalArgumentException("frequency range too large for Counting Sort: " + maxFrequency);
         }
 
