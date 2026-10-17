@@ -11,7 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/papers")
 public class CorpusController {
     private static final Availability NOT_IMPLEMENTED = new Availability(false, "NOT_IMPLEMENTED");
-    private static final Capabilities CAPABILITIES = new Capabilities(NOT_IMPLEMENTED, NOT_IMPLEMENTED,
+    private static final Availability AVAILABLE = new Availability(true, null);
+    private static final Capabilities CAPABILITIES = new Capabilities(AVAILABLE, NOT_IMPLEMENTED,
             NOT_IMPLEMENTED, List.of("levenshtein", "lcs", "tf-idf-cosine", "jaccard", "gemini-embeddings", "local-embeddings")
                     .stream().map(method -> new SimilarityCapability(method, NOT_IMPLEMENTED)).toList());
     private final CorpusService corpus;

@@ -43,7 +43,7 @@ class CorpusEndpointTest {
         assertEquals("paper-20", json.path("papers").get(19).path("id").asText());
         assertEquals(3, json.path("papers").get(0).size());
         var capabilities = json.path("capabilities");
-        for (String method : List.of("ranking", "clustering", "search")) {
+        for (String method : List.of("clustering", "search")) {
             assertFalse(capabilities.path(method).path("available").asBoolean());
             assertEquals("NOT_IMPLEMENTED", capabilities.path(method).path("blockedReason").asText());
         }

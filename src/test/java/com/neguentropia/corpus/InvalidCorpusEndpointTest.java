@@ -34,6 +34,11 @@ class InvalidCorpusEndpointTest {
                 assertEquals(503, response.statusCode());
                 assertEquals("{\"code\":\"CORPUS_UNAVAILABLE\",\"message\":\"Corpus is unavailable.\"}", response.body());
             }
+            var ranking = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/ranking"))
+                    .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString("{}")).build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertEquals(503, ranking.statusCode());
+            assertEquals("{\"code\":\"CORPUS_UNAVAILABLE\",\"message\":\"Corpus is unavailable.\"}", ranking.body());
             var response = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/health")).build(),
                     HttpResponse.BodyHandlers.ofString());
             assertEquals(200, response.statusCode());

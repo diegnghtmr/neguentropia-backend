@@ -37,7 +37,7 @@ La aplicación escucha en `0.0.0.0` dentro del contenedor. `PORT` cambia el puer
 {"status":"up","corpusState":"unavailable"}
 ```
 
-El contrato común se conserva únicamente en `docs/openapi.yaml` del workspace padre durante esta fase; no se duplica aquí. Se implementan el catálogo `GET /api/papers` y el detalle `GET /api/papers/{id}`. No se implementan ranking, similitud, clustering, búsqueda ni modelos: todas sus capacidades declaran `available: false`, `blockedReason: NOT_IMPLEMENTED`. No se habilitan proveedores externos ni se descarga el corpus.
+El contrato común se conserva únicamente en `docs/openapi.yaml` del workspace padre durante esta fase; no se duplica aquí. Se implementan el catálogo `GET /api/papers`, el detalle `GET /api/papers/{id}` y el ranking `POST /api/ranking`. El ranking recibe un objeto JSON vacío, ordena la misma lista de frecuencias de los 20 abstracts con Counting, Radix y Bucket, comprueba que las tres listas completas coinciden y devuelve el top 15 y el tiempo de cada método. Las explicaciones están en [docs/ranking](docs/ranking). No se implementan similitud, clustering, búsqueda ni modelos: sus capacidades declaran `available: false`, `blockedReason: NOT_IMPLEMENTED`. No se habilitan proveedores externos ni se descarga el corpus.
 
 ## Corpus externo y preparación local
 

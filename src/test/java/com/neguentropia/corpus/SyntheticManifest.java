@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Map;
 import tools.jackson.databind.json.JsonMapper;
 
-final class SyntheticManifest {
-    static final JsonMapper JSON = JsonMapper.builder().build();
+public final class SyntheticManifest {
+    public static final JsonMapper JSON = JsonMapper.builder().build();
     private SyntheticManifest() {}
 
     static String hash(String text) throws Exception {
@@ -20,7 +20,7 @@ final class SyntheticManifest {
                 .digest(text.getBytes(StandardCharsets.UTF_8)));
     }
 
-    static Map<String, Object> create() throws Exception {
+    public static Map<String, Object> create() throws Exception {
         var papers = new ArrayList<Map<String, Object>>();
         for (int i = 1; i <= 20; i++) {
             var paper = new LinkedHashMap<String, Object>();
@@ -45,17 +45,17 @@ final class SyntheticManifest {
     }
 
     @SuppressWarnings("unchecked")
-    static List<Map<String, Object>> papers(Map<String, Object> manifest) {
+    public static List<Map<String, Object>> papers(Map<String, Object> manifest) {
         return (List<Map<String, Object>>) manifest.get("papers");
     }
 
-    static void version(Map<String, Object> manifest) throws Exception {
+    public static void version(Map<String, Object> manifest) throws Exception {
         var tuples = papers(manifest).stream().map(p -> List.of(p.get("id"), p.get("title"),
                 p.get("authors"), p.get("originalAbstract"), p.get("sourceSha256"))).toList();
         manifest.put("corpusVersion", "abstracts-sha256-" + hash(JSON.writeValueAsString(tuples)));
     }
 
-    static Path write(Path directory, Map<String, Object> manifest) throws Exception {
+    public static Path write(Path directory, Map<String, Object> manifest) throws Exception {
         return Files.writeString(directory.resolve("synthetic-manifest.json"), JSON.writeValueAsString(manifest));
     }
 }

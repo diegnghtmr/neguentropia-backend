@@ -20,7 +20,7 @@ public class CorpusCorsConfiguration implements WebMvcConfigurer {
     @Override public void addCorsMappings(CorsRegistry registry) {
         // An explicit empty list overrides Spring's wildcard registration default.
         registry.addMapping("/api/**").allowedOrigins(origins.toArray(String[]::new))
-                .allowedMethods("GET").allowCredentials(false);
+                .allowedMethods("GET", "POST").allowCredentials(false);
     }
 
     static List<String> allowedOrigins(String configured) {

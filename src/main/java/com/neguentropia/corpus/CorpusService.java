@@ -27,6 +27,8 @@ public class CorpusService {
 
     public boolean ready() { return manifest != null; }
     CorpusLoader.Manifest manifest() { return manifest; }
+    public String corpusVersion() { return manifest == null ? null : manifest.corpusVersion(); }
+    public int paperCount() { return manifest == null ? 0 : manifest.papers().size(); }
     public List<PreparedPaper> preparedPapers() { return preparedPapers; }
     public Map<String, Long> frequencies() { return frequencies; }
     public record PreparedPaper(String id, String baseText, List<String> tokens) {}
