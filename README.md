@@ -60,6 +60,14 @@ Las pruebas usan manifiestos de veinte registros **sintéticos** en estado tempo
 
 La [validación técnica del backend](docs/validation/f1-backend.md) contrasta requisitos, diseño y contrato con el código y las pruebas. Explica qué validaciones son necesarias, qué optimizaciones no están justificadas y los límites de la ejecución observada. No añade capas ni algoritmos de fases posteriores.
 
+## Ranking measurement
+
+The [full-corpus measurement report](docs/ranking/measurements.md) records the
+three independent JVM runs, rotated method order, 20 warmups and 100 measured
+runs per method/process, exact complete-output agreement, real top 15 and timing
+limitations. `RankingBenchmark` is a standalone offline entry point; it does not
+start the HTTP server. Its manifest must remain externally mounted read-only.
+
 ## Contenido del repositorio
 
 Versionar fuentes, pruebas, wrapper, configuración de build, Dockerfile y documentación técnica. No versionar credenciales, cachés, resultados de build ni instrucciones/notas privadas. `.env.example`, si se incorpora, debe contener únicamente valores ficticios. Los directorios de datos `/corpus/` y `/models/` están excluidos: los permisos de uso y publicación se comprueban antes de cualquier transferencia. Ignorar un archivo no elimina versiones anteriores ni sustituye la revisión de los archivos preparados.
