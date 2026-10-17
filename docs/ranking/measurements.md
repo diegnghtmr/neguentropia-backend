@@ -41,7 +41,7 @@ sort outputs and 180 warmup outputs were checked in full.
   unrelated host activity, no explicit CPU/memory limits or heap tuning.
 - Runtime: Java 25.0.4.1; image
   `eclipse-temurin:25-jre@sha256:fd4b1c02c64eef378212e23656fc0b0caa41a357876fa0b60e51ceda94a3db64`.
-- Build: Gradle wrapper 9.8.1 in the contributor's development container,
+- Build: Gradle wrapper 9.8.1 in a development container,
   `./gradlew --no-daemon --console=plain bootJar` (exit 0).
 - Measurement containers: no network, read-only root filesystem, unprivileged
   UID/GID 1000:1000, JAR and manifest bind-mounted **read-only**, no corpus copy.
@@ -193,5 +193,4 @@ If stronger performance claims are needed, revisit warmup/sample counts,
 calibrate timer overhead and control host load before drawing them.
 
 The hybrid Bucket variant remains subject to academic acceptance; measurements
-and equality do not resolve that separate requirement. This report contributes
-the empirical comparison, not overall phase closure or integration approval.
+and equality do not resolve that separate requirement.
