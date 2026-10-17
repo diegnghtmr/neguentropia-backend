@@ -41,11 +41,10 @@ sort outputs and 180 warmup outputs were checked in full.
   unrelated host activity, no explicit CPU/memory limits or heap tuning.
 - Runtime: Java 25.0.4.1; image
   `eclipse-temurin:25-jre@sha256:fd4b1c02c64eef378212e23656fc0b0caa41a357876fa0b60e51ceda94a3db64`.
-- Build: Gradle wrapper 9.8.1 in a development container,
-  `./gradlew --no-daemon --console=plain bootJar` (exit 0).
+- Build: Gradle wrapper 9.8.1, `./gradlew bootJar`.
 - Measurement containers: no network, read-only root filesystem, unprivileged
   UID/GID 1000:1000, JAR and manifest bind-mounted **read-only**, no corpus copy.
-  All three invocations exited 0. No server or Spring application context starts.
+  No server or Spring application context starts.
 
 Run the following once for each order above, supplying local absolute paths via
 `JAR` and `MANIFEST` (do not place the manifest in the repository or image):
@@ -62,8 +61,7 @@ docker run --rm --pull=never --network none --read-only --user 1000:1000 \
 
 The harness prints plain key/value lines: configuration, all individual measured
 samples, statistics, top 15 and complete-output equality. It never prints abstracts
-or host paths. Raw output, stderr, exact expanded commands, exits and UTC dates
-were retained separately as private evidence, not as repository assets. Printed
+or host paths. Printed
 decimal digits preserve observations, not a claim of equivalent timer accuracy.
 
 ## Input and configuration
@@ -126,7 +124,7 @@ the same table; equality was checked on all 1079 records, not only these 15.
 | 14 | review | 36 | review | 36 | review | 36 |
 | 15 | educational | 33 | educational | 33 | educational | 33 |
 
-## Cross-validation and test evidence
+## Cross-validation
 
 `RankingCrossValidationTest` uses seed `0x5EEDB0C`, sizes
 0, 1, 2, 3, 9, 15, 16, 31, 100, 999, 2048 and 3000, and five shapes:
@@ -142,24 +140,8 @@ explicitly rejected and Radix equals the oracle. Bucket rejects unsupported
 local widths before allocation; a representable but enormous width is not
 allocated deliberately in the tests. Radix also agrees at Long.MAX_VALUE;
 Bucket explicitly rejects that unrepresentable Fmax+1. No claim is made that
-Counting or Bucket can allocate arbitrary long ranges. The older Radix design
-sheet describes int frequencies; the implemented common record and Radix support
-positive long values, with at most 19 passes.
-
-The new harness tests first failed compilation because `RankingBenchmark` did
-not yet exist (9 missing-symbol errors, exit 1). Existing sorts require no new
-implementation, so their added cross-validation tests are regression checks,
-not a manufactured failing algorithm test. An initial boundary-test expectation
-incorrectly assumed that Bucket would reject an int-range width; it instead
-attempted a representable array and exhausted the test heap. The test now only
-requires pre-allocation rejection when the actual width exceeds the supported
-array length, without changing any sort or hiding a fallback.
-
-Final full-suite command `./gradlew --no-daemon --console=plain test` inside the
-development container passed (exit 0). XML totals: **102 tests, 0 failures,
-0 errors, 0 skipped**; the six new test methods passed. Statistics tests cover
-odd/even/single samples, preservation of the source array, invalid durations,
-and valid/invalid method permutations.
+Counting or Bucket can allocate arbitrary long ranges. Radix supports positive
+long values, with at most 19 passes.
 
 ## Interpretation and complexity assumptions
 

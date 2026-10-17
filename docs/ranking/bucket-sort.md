@@ -45,11 +45,9 @@ Because `B*w < Fmax+1+B`, the overall bound is O(V+B+Fmax). It becomes O(V) only
 
 Uniqueness validation uses a hash set with expected O(V) operations; hashing terms also depends on their string lengths. That assumption is separate from the integer sorting bound. Live auxiliary storage is O(V+B+w): bucket lists, validation set, accumulated output, immutable copy, and one local count/output pair at a time. Total temporary allocation over the run may be O(V+r*w); local arrays are not retained for all buckets simultaneously.
 
-## Limits and verification scope
+## Limits
 
 - Null list or element throws `NullPointerException`; duplicate terms throw `IllegalArgumentException`.
 - `Fmax=Long.MAX_VALUE` cannot represent `Fmax+1` in `long` and is explicitly rejected. Ceiling division uses quotient and remainder to avoid addition overflow.
 - A width greater than `Integer.MAX_VALUE-8` is explicitly rejected before narrowing or allocation. Smaller arrays can still exceed the JVM heap and raise `OutOfMemoryError`; there is no silent fallback. Parameter calculation itself does not allocate local count arrays and can describe a width that sorting cannot allocate.
-- Tests cover exact outputs, stability, empty/single/all-equal inputs, empty buckets, interval boundaries, parameter sizes, invalid input, range rejection, unchanged input, immutable output, and full-record permutation.
-- Synthetic unit tests are not corpus benchmarks. Corpus-wide agreement, authentic top 15 and measured milliseconds require the later integrated comparison. A timing interval must include validation, parameters, structures, distribution, local Counting, concatenation and immutable output; common input preparation/copy and top selection stay outside.
 - This hybrid is the selected technical implementation. Academic acceptance of the hybrid variant remains unconfirmed.

@@ -99,7 +99,7 @@ Peak live auxiliary space is O(V+b), including the validation set, record
 arrays and immutable result. Across passes, O(dV) output slots are allocated
 in total, but obsolete pass arrays are not all simultaneously live.
 
-## Limits and verification scope
+## Limits
 
 - Empty input returns an immutable empty list; all other valid inputs return
   every record, including lists shorter than 15. No truncation occurs here.
@@ -112,12 +112,3 @@ in total, but obsolete pass arrays are not all simultaneously live.
 - The caller must supply a list that is not concurrently modified and already
   represents the intended aggregate. This kernel does not extract abstracts,
   tokenize, count terms, access HTTP, or verify corpus provenance.
-- Tests cover both worked-example passes, ties, all-equal frequencies, empty
-  and singleton lists, integer/long boundaries, pass counts, invalid input,
-  allocation-length rejection, immutability, unchanged input and exact
-  record-level permutation with descending stable order.
-- Synthetic correctness tests do not establish full-corpus timing or equality
-  with the other two methods. Those require integration on the same prepared
-  corpus input. Preparation and the common input copy stay outside the timing
-  interval; internal validation, structures, passes and output construction
-  belong inside it. Top selection and result checks occur afterwards.

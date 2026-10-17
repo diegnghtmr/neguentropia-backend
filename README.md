@@ -56,10 +56,6 @@ Una configuración ausente, ilegible, inválida o parcial deja el corpus complet
 
 Las pruebas usan manifiestos de veinte registros **sintéticos** en estado temporal aislado; no acreditan la integración con los datos reales. Incluyen validación fail-closed, preparación Unicode, HTTP, CORS permitido/rechazado/cerrado por defecto y regresión del health sin corpus.
 
-## Validación de la arquitectura
-
-La [validación técnica del backend](docs/validation/backend-architecture.md) contrasta requisitos, diseño y contrato con el código y las pruebas. Explica qué validaciones son necesarias, qué optimizaciones no están justificadas y los límites de la ejecución observada. No añade capas ni algoritmos nuevos.
-
 ## Ranking measurement
 
 The [full-corpus measurement report](docs/ranking/measurements.md) records the
