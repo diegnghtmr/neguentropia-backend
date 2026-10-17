@@ -1,12 +1,12 @@
-# F1 backend validation
+# Backend architecture validation
 
 ## Scope and verdict
 
 Reviewed baseline: `f5978ece095387c827610eb536a4ccc7794db824`.
 
-**No blocking overengineering finding was identified in the implemented corpus foundation.** Keep the concrete controller/service/preparation structure and its validation boundaries. This review adds documentation, not a Java refactor, a new architecture, or an implementation of later-phase algorithms.
+**No blocking overengineering finding was identified in the implemented corpus foundation.** Keep the concrete controller/service/preparation structure and its validation boundaries. This review adds documentation, not a Java refactor, a new architecture, or an implementation of new algorithms.
 
-The requirement references below are the project's PRD v1.0, TRD v1.0, adopted common design contracts, and OpenAPI 1.0.0. These definition documents remain centralized in the parent workspace; they are not duplicated here. Product requirements determine scope, technical/design documents explain implementation, and OpenAPI determines HTTP fields, routes, and errors. Later-phase designs are not evidence of implemented algorithms.
+The requirement references below are the project's PRD v1.0, TRD v1.0, adopted common design contracts, and OpenAPI 1.0.0. These definition documents are maintained outside this repository. Product requirements determine scope, technical/design documents explain implementation, and OpenAPI determines HTTP fields, routes, and errors. Designs for features not implemented here are not evidence of implemented algorithms.
 
 ## Requirement-to-implementation review
 
@@ -23,7 +23,7 @@ Paths in this table are relative to this repository. Test-class references ident
 | OpenAPI catalog/detail/health and explicit errors; TRD §7 | Controller returns catalog/detail only when ready, `503 CORPUS_UNAVAILABLE` otherwise, and `404 PAPER_NOT_FOUND` for an unknown ID only when ready. [InvalidCorpusEndpointTest](../../src/test/java/com/neguentropia/corpus/InvalidCorpusEndpointTest.java), catalog/detail tests, and [HealthEndpointTest](../../src/test/java/com/neguentropia/HealthEndpointTest.java) cover public HTTP behavior. | Distinguishes process liveness from corpus readiness. Unknown ID must not mask unavailable corpus state. This review does not claim a fresh full OpenAPI schema/fixture integration sweep. |
 | PRD QC-06/07; TRD §§5,7: fail closed and do not leak local input details | Service publishes no manifest on load failure; controller projects explicit public records rather than serializing loader records. Private source references and load exception details are absent from these response DTOs. | The broad catch is an intentional fail-closed boundary, not permission to continue with partial data. Operator diagnostics remain limited; adding diagnostics later would require privacy-focused verification, not exposure through HTTP. |
 | PRD QC-06; TRD local-origin restrictions | [CorpusCorsConfiguration](../../src/main/java/com/neguentropia/corpus/CorpusCorsConfiguration.java) allows GET for explicit valid loopback origins, disables credentials, and closes the complete allowlist on invalid configuration. [CorpusCorsConfigurationTest](../../src/test/java/com/neguentropia/corpus/CorpusCorsConfigurationTest.java) and endpoint tests cover configuration and response behavior. | Necessary browser integration guard. CORS is not authentication, spending control, or authorization to invoke a model. No security configuration was changed. |
-| PRD QC-04/08; TRD §§11,13–14: container execution, exclusions, phase boundaries | Existing [Dockerfile](../../Dockerfile), [build configuration](../../build.gradle), and [README](../../README.md) document container execution and external data. Current controller marks all nine analysis capabilities unavailable. | No additional service, dependency, CI pipeline, external cache, database, model client, or corpus publication was introduced. This unit does not close F1 or start F2. |
+| PRD QC-04/08; TRD §§11,13–14: container execution, exclusions, scope boundaries | Existing [Dockerfile](../../Dockerfile), [build configuration](../../build.gradle), and [README](../../README.md) document container execution and external data. Current controller marks all nine analysis capabilities unavailable. | No additional service, dependency, CI pipeline, external cache, database, model client, or corpus publication was introduced. |
 
 ## Complexity decisions and tradeoffs
 
@@ -41,7 +41,7 @@ A possible later optimization would aggregate the already prepared tokens. It wo
 
 ### Do not implement future design sheets early
 
-TF-IDF, sorting, similarity, searching, clustering, model inference, and their timing protocols belong to subsequent authorized work. Their absence from the foundation is not a reason to add factories, empty interfaces, placeholder services, or algorithm dependencies. The capability response makes that absence explicit.
+TF-IDF, sorting, similarity, searching, clustering, model inference, and their timing protocols are not part of this foundation. Their absence from the foundation is not a reason to add factories, empty interfaces, placeholder services, or algorithm dependencies. The capability response makes that absence explicit.
 
 ## Observed verification
 
@@ -55,9 +55,9 @@ Executed inside the assigned Docker development environment, not with host Java/
 - Process duration reported by the runner: 52 seconds; Gradle reported 51 seconds. These are suite/build durations, **not algorithm benchmarks**.
 - Existing JUnit XML reports were read after that execution: **7 suites, 61 tests, 0 failures, 0 errors, 0 skipped**.
 - Suites: `HealthEndpointTest`, `CorpusCorsConfigurationTest`, `CorpusEndpointTest`, `CorpusLoaderTest`, `CorpusServiceTest`, `InvalidCorpusEndpointTest`, and `TextPreparationTest`.
-- No deterministic behavior was changed, so a new RED test would not meaningfully validate this documentation-only unit. No tests were duplicated or rewritten to manufacture a failure.
+- No deterministic behavior was changed, so a new RED test would not meaningfully validate this documentation-only change. No tests were duplicated or rewritten to manufacture a failure.
 
-The suite uses temporary **synthetic** manifests. It does not establish PDF extraction accuracy, complete real-corpus ingestion, redistribution rights, visual acceptance, production deployment, or teacher acceptance. Those remain separate evidence and authorization boundaries. No original corpus text or private manifest is included in this report.
+The suite uses temporary **synthetic** manifests. It does not establish PDF extraction accuracy, complete real-corpus ingestion, redistribution rights, visual acceptance, production deployment, or teacher acceptance. Those are outside the scope of this report. No original corpus text or private manifest is included in this report.
 
 ## Outcome
 
