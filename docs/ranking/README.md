@@ -42,9 +42,11 @@ The protocol has 20 warm-up runs and 100 measured runs per method, in three inde
 
 | Method | Median of 300 runs (ms) | Minimum (ms) | Maximum (ms) |
 | --- | ---: | ---: | ---: |
-| Counting | 0.052687 | 0.031889 | 4.591844 |
-| Radix | 0.1009375 | 0.04216 | 3.892686 |
-| Bucket | 0.16355199999999998 | 0.057832 | 5.217948 |
+| Counting | 0.0632715 | 0.032206 | 5.320922 |
+| Radix | 0.1009755 | 0.040714 | 0.364776 |
+| Bucket | 0.176704 | 0.061934 | 4.955768 |
+
+These measurements use `corpusVersion=abstracts-sha256-062c5fd325318e59d4b505d40cb36a5330a91d280dba16739c3f0aae36d5dd11` and source commit `0ed46727b3ba5d241a3c0f067d49b40d46c21d67`.
 
 The times are a fraction of a millisecond because only 1079 records are sorted. At this scale validation, allocation, JIT and scheduling effects are comparable to the work itself. The ordering of the medians is an observation of this run, not a general ranking of the algorithms, and it must not be extrapolated to larger inputs.
 

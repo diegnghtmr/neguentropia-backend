@@ -2,7 +2,7 @@
 
 ## Scope and protocol
 
-Measured on 2026-10-17 (UTC), using the three implemented sorts over the same
+Measured on 2026-10-20 (UTC), using the three implemented sorts over the same
 20-abstract corpus. This is an offline kernel experiment, not HTTP latency or an
 end-to-end preparation benchmark. No PDF, title or author text enters the counts.
 
@@ -33,6 +33,19 @@ Each process measured 100 samples per method; overall statistics below pool all
 the experiment each method had 60 warmups and 300 measured runs. All 900 measured
 sort outputs and 180 warmup outputs were checked in full.
 
+## Identification
+
+- `corpusVersion`:
+  `abstracts-sha256-062c5fd325318e59d4b505d40cb36a5330a91d280dba16739c3f0aae36d5dd11`.
+- Measured source commit: `0ed46727b3ba5d241a3c0f067d49b40d46c21d67`.
+
+`RankingBenchmark` prints both identifiers as `corpus_version` and `source_commit`
+in every JVM run. It reads the corpus version from the validated manifest and
+refuses to run without a valid hexadecimal source-commit identifier supplied
+through `benchmark.sourceCommit`. The JAR used here was built from the clean
+source commit identified above; the harness validates the identifier's format,
+not the JAR's correspondence to a Git checkout.
+
 ## Environment and reproduction
 
 - CPU: 12th Gen Intel Core i9-12900H, one socket, 14 physical cores,
@@ -47,14 +60,17 @@ sort outputs and 180 warmup outputs were checked in full.
   No server or Spring application context starts.
 
 Run the following once for each order above, supplying local absolute paths via
-`JAR` and `MANIFEST` (do not place the manifest in the repository or image):
+`JAR` and `MANIFEST` (do not place the manifest in the repository or image).
+Build the JAR from the identified commit and set `COMMIT` to that same revision:
 
 ```sh
+COMMIT=0ed46727b3ba5d241a3c0f067d49b40d46c21d67
 docker run --rm --pull=never --network none --read-only --user 1000:1000 \
   --mount "type=bind,src=$JAR,dst=/app.jar,readonly" \
   --mount "type=bind,src=$MANIFEST,dst=/corpus/manifest.json,readonly" \
   eclipse-temurin:25-jre@sha256:fd4b1c02c64eef378212e23656fc0b0caa41a357876fa0b60e51ceda94a3db64 \
-  java -Dloader.main=com.neguentropia.ranking.RankingBenchmark \
+  java -Dbenchmark.sourceCommit=$COMMIT \
+  -Dloader.main=com.neguentropia.ranking.RankingBenchmark \
   -cp /app.jar org.springframework.boot.loader.launch.PropertiesLauncher \
   /corpus/manifest.json "$ORDER"
 ```
@@ -88,18 +104,18 @@ change its provenance or establish additional data-use permissions.
 
 | Process | Method | Median | Minimum | Maximum |
 | --- | --- | ---: | ---: | ---: |
-| 1 | counting | 0.06619900000000001 | 0.034503 | 0.274811 |
-| 1 | radix | 0.102153 | 0.044434 | 3.892686 |
-| 1 | bucket | 0.0795875 | 0.057832 | 0.335151 |
-| 2 | counting | 0.047254500000000005 | 0.033887 | 0.366297 |
-| 2 | radix | 0.069436 | 0.046429 | 0.377221 |
-| 2 | bucket | 0.1244925 | 0.059197 | 5.217948 |
-| 3 | counting | 0.041851 | 0.031889 | 4.591844 |
-| 3 | radix | 0.11688699999999999 | 0.04216 | 0.297304 |
-| 3 | bucket | 0.177821 | 0.063758 | 0.403166 |
-| Overall (300 samples) | counting | 0.052687 | 0.031889 | 4.591844 |
-| Overall (300 samples) | radix | 0.1009375 | 0.04216 | 3.892686 |
-| Overall (300 samples) | bucket | 0.16355199999999998 | 0.057832 | 5.217948 |
+| 1 | counting | 0.06379 | 0.036959 | 0.355036 |
+| 1 | radix | 0.0833035 | 0.040714 | 0.364776 |
+| 1 | bucket | 0.09157 | 0.061934 | 0.397255 |
+| 2 | counting | 0.0604785 | 0.033191 | 0.294857 |
+| 2 | radix | 0.0626755 | 0.042502 | 0.360446 |
+| 2 | bucket | 0.1561865 | 0.06312 | 4.955768 |
+| 3 | counting | 0.060062 | 0.032206 | 5.320922 |
+| 3 | radix | 0.115189 | 0.044968 | 0.234162 |
+| 3 | bucket | 0.20235999999999998 | 0.10581 | 0.526716 |
+| Overall (300 samples) | counting | 0.0632715 | 0.032206 | 5.320922 |
+| Overall (300 samples) | radix | 0.1009755 | 0.040714 | 0.364776 |
+| Overall (300 samples) | bucket | 0.176704 | 0.061934 | 4.955768 |
 
 ## Top 15 from each implemented method
 
@@ -161,8 +177,9 @@ Hash-based duplicate validation has expected linear operations and term-string
 costs in addition to those integer-kernel bounds. None of these measurements
 proves asymptotic complexity or uniform frequency distributions.
 
-Counting has the lowest pooled median in this run, but process medians depend
-on method position and JVM state. Maxima include millisecond-scale outliers,
+Counting has the lowest pooled median in this run, but medians vary across
+processes with different method orders and JVM states. Counting and Bucket
+maxima include millisecond-scale outliers,
 consistent with scheduling, allocation/GC and compilation effects; their exact
 causes were not profiled. Twenty warmups do not establish steady-state JIT.
 The timer reports nanoseconds but its effective resolution/overhead was not
