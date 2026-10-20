@@ -29,6 +29,7 @@ public final class RankingBenchmark {
 
     private static void run(String[] args) throws Exception {
         var order = parseOrder(args);
+        var sourceCommit = validateSourceCommit(System.getProperty("benchmark.sourceCommit"));
         var manifest = new CorpusLoader(JsonMapper.builder().build()).load(Path.of(args[0]));
         var input = TermFrequency.listOf(TextPreparation.frequencies(manifest.papers()));
         long tokens = 0;
@@ -39,6 +40,8 @@ public final class RankingBenchmark {
         }
         var parameters = BucketSort.Parameters.forInput(input);
         System.out.println("format=ranking-benchmark-v1");
+        System.out.println("corpus_version=" + manifest.corpusVersion());
+        System.out.println("source_commit=" + sourceCommit);
         System.out.println("java_version=" + System.getProperty("java.version"));
         System.out.println("available_processors=" + Runtime.getRuntime().availableProcessors());
         System.out.println("order=" + String.join(",", order));
@@ -79,6 +82,13 @@ public final class RankingBenchmark {
             }
         }
         System.out.println("complete_outputs_equal=true");
+    }
+
+    static String validateSourceCommit(String sourceCommit) {
+        if (sourceCommit == null || !sourceCommit.matches("[0-9a-f]{7,40}")) {
+            throw new IllegalArgumentException("Invalid source commit");
+        }
+        return sourceCommit;
     }
 
     static List<String> parseOrder(String[] args) {
