@@ -37,7 +37,7 @@ La aplicación escucha en `0.0.0.0` dentro del contenedor. `PORT` cambia el puer
 {"status":"up","corpusState":"unavailable"}
 ```
 
-El contrato HTTP se define en una especificación OpenAPI mantenida fuera de este repositorio. Se implementan el catálogo `GET /api/papers`, el detalle `GET /api/papers/{id}` y el ranking `POST /api/ranking`. El ranking recibe un objeto JSON vacío, ordena la misma lista de frecuencias de los 20 abstracts con Counting, Radix y Bucket, comprueba que las tres listas completas coinciden y devuelve el top 15 y el tiempo de cada método. Las explicaciones están en [docs/ranking](docs/ranking). No se implementan similitud, clustering, búsqueda ni modelos: sus capacidades declaran `available: false`, `blockedReason: NOT_IMPLEMENTED`. No se habilitan proveedores externos ni se descarga el corpus.
+El contrato HTTP se define en una especificación OpenAPI mantenida fuera de este repositorio. Se implementan el catálogo `GET /api/papers`, el detalle `GET /api/papers/{id}` y el ranking `POST /api/ranking`. El ranking recibe un objeto JSON vacío, ordena la misma lista de frecuencias de los 20 abstracts con Counting, Radix y Bucket, comprueba que las tres listas completas coinciden y devuelve el top 15 y el tiempo de cada método. Las explicaciones están en [docs/seguimiento-ranking-terminos.docx](docs/seguimiento-ranking-terminos.docx). No se implementan similitud, clustering, búsqueda ni modelos: sus capacidades declaran `available: false`, `blockedReason: NOT_IMPLEMENTED`. No se habilitan proveedores externos ni se descarga el corpus.
 
 ## Corpus externo y preparación local
 
@@ -58,7 +58,7 @@ Las pruebas usan manifiestos de veinte registros **sintéticos** en estado tempo
 
 ## Ranking measurement
 
-The [full-corpus measurement report](docs/ranking/measurements.md) records the
+The [ranking report](docs/seguimiento-ranking-terminos.docx) records the
 three independent JVM runs, rotated method order, 20 warmups and 100 measured
 runs per method/process, exact complete-output agreement, real top 15 and timing
 limitations. `RankingBenchmark` is a standalone offline entry point; it does not
