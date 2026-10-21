@@ -67,5 +67,3 @@ start the HTTP server. Its manifest must remain externally mounted read-only.
 ## Contenido del repositorio
 
 Versionar fuentes, pruebas, wrapper, configuración de build, Dockerfile y documentación técnica. No versionar credenciales, cachés, resultados de build ni instrucciones/notas privadas. `.env.example`, si se incorpora, debe contener únicamente valores ficticios. Los directorios de datos `/corpus/` y `/models/` están excluidos: los permisos de uso y publicación se comprueban antes de cualquier transferencia. Ignorar un archivo no elimina versiones anteriores ni sustituye la revisión de los archivos preparados.
-
-No hay CI ni despliegue configurados.
