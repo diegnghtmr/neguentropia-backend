@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 import tools.jackson.databind.json.JsonMapper;
 
-/** Standalone, offline full-corpus measurement; no Spring context or HTTP server. */
 public final class RankingBenchmark {
     private static final int WARMUPS = 20;
     private static final int MEASUREMENTS = 100;
@@ -64,7 +63,6 @@ public final class RankingBenchmark {
                 long start = System.nanoTime();
                 result = sort.apply(copy);
                 long elapsed = System.nanoTime() - start;
-                // Consume and check every complete output, including warmups, outside the clock.
                 if (reference == null) reference = result;
                 else if (!reference.equals(result)) throw new IllegalStateException("Sort disagreement");
                 if (run >= 0) durations[run] = elapsed / 1_000_000.0;

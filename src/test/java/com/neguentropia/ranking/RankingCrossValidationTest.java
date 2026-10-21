@@ -52,8 +52,6 @@ class RankingCrossValidationTest {
             assertEquals(oracle(input), RadixSort.sortDescending(input));
             assertTrue(assertThrows(IllegalArgumentException.class,
                     () -> CountingSort.sortDescending(input)).getMessage().contains("range too large"));
-            // Integer.MAX_VALUE yields a representable but heap-sized local array;
-            // do not intentionally exhaust the test JVM. Only exercise pre-allocation rejection.
             if (BucketSort.Parameters.forInput(input).bucketWidth() > Integer.MAX_VALUE - 8L) {
                 assertTrue(assertThrows(IllegalArgumentException.class,
                         () -> BucketSort.sortDescending(input)).getMessage().contains("width"));

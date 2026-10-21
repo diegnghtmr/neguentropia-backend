@@ -42,8 +42,6 @@ class RankingEndpointTest {
         return terms;
     }
 
-    // Synthetic abstracts: each has "Árbol, árbol 123 IA2 syntheticN", so árbol=40, ia2=20 and
-    // twenty distinct singletons in manifest order: V=22, Fmax=40, 80 tokens.
     @Test void ranksTheTwentyAbstractsWithThreeIdenticalStableResults() throws Exception {
         var response = post("{}", "application/json");
         assertEquals(200, response.statusCode());

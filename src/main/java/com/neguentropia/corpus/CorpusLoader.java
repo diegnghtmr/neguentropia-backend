@@ -24,7 +24,6 @@ public final class CorpusLoader {
     }
 
     public Manifest load(Path path) throws Exception {
-        // Decode strictly before parsing: replacement characters must never hide malformed input bytes.
         String json = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
                 .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(Files.readAllBytes(path))).toString();
         JsonNode root = mapper.readTree(json);
@@ -67,7 +66,6 @@ public final class CorpusLoader {
         return new Manifest(1, version, "agent-reviewed", false, papers);
     }
 
-    // JSON.stringify uses lowercase control escapes and preserves non-ASCII code points exactly.
     private static String canonicalTuples(List<Paper> papers) {
         var json = new StringBuilder("[");
         for (int i = 0; i < papers.size(); i++) {

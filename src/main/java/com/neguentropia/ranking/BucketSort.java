@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
-/** Stable descending interval buckets with an explicit local Counting pass. */
 public final class BucketSort {
     private BucketSort() {}
 
@@ -37,7 +36,6 @@ public final class BucketSort {
         var parameters = Parameters.forInput(entries);
         if (entries.isEmpty()) return List.of();
         long width = parameters.bucketWidth();
-        // Reserve the usual JVM array-header margin before narrowing to int.
         if (width > Integer.MAX_VALUE - 8L) {
             throw new IllegalArgumentException("bucket width exceeds supported array length");
         }
@@ -62,7 +60,6 @@ public final class BucketSort {
         for (var entry : bucket) counts[(int) (entry.frequency() - low)]++;
         for (int key = width - 2; key >= 0; key--) counts[key] += counts[key + 1];
         var local = new TermFrequency[bucket.size()];
-        // Reverse placement preserves insertion order among equal local keys.
         for (int i = bucket.size() - 1; i >= 0; i--) {
             var entry = bucket.get(i);
             int key = (int) (entry.frequency() - low);

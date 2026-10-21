@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
-/** Decimal LSD radix ordering of all prepared frequencies, descending and stable. */
 public final class RadixSort {
     public static final int BASE = 10;
     private static final int MAX_ARRAY_LENGTH = Integer.MAX_VALUE - 8;
@@ -42,7 +41,6 @@ public final class RadixSort {
         return List.copyOf(Arrays.asList(current));
     }
 
-    /** Zero has no passes (empty input); positive long frequencies need at most 19. */
     public static int passCount(long maxFrequency) {
         if (maxFrequency < 0) throw new IllegalArgumentException("Maximum must not be negative");
         int passes = 0;
@@ -53,7 +51,6 @@ public final class RadixSort {
         return passes;
     }
 
-    // Package visibility lets the worked-example test verify each actual counting pass.
     static TermFrequency[] sortDigit(TermFrequency[] current, long exponent) {
         var counts = new int[BASE];
         for (var entry : current) {
@@ -64,7 +61,6 @@ public final class RadixSort {
             counts[digit] += counts[digit + 1];
         }
         var output = new TermFrequency[current.length];
-        // Reverse traversal plus descending suffix counts preserves equal-digit order.
         for (int i = current.length - 1; i >= 0; i--) {
             int digit = (int) ((current[i].frequency() / exponent) % BASE);
             output[--counts[digit]] = current[i];

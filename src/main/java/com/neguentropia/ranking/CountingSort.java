@@ -5,12 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Counting Sort over term frequencies: descending and stable, without comparing records.
- * Time O(V + Fmax) and space O(V + Fmax), where V is the number of terms.
- */
 public final class CountingSort {
-    /** Largest array length the JVM reliably allocates. */
     static final long MAX_ARRAY_LENGTH = Integer.MAX_VALUE - 8L;
 
     private CountingSort() {}
@@ -24,15 +19,12 @@ public final class CountingSort {
             throw new IllegalArgumentException("frequency range too large for Counting Sort: " + maxFrequency);
         }
 
-        // positions[f] first counts the terms with frequency f, then becomes the number of
-        // terms with frequency >= f: the exclusive end of that frequency's block.
         int[] positions = new int[(int) maxFrequency + 1];
         for (var entry : entries) positions[(int) entry.frequency()]++;
         for (int frequency = (int) maxFrequency - 1; frequency >= 0; frequency--) {
             positions[frequency] += positions[frequency + 1];
         }
 
-        // Placing from right to left keeps tied terms in their input order.
         var output = new TermFrequency[entries.size()];
         for (int i = entries.size() - 1; i >= 0; i--) {
             var entry = entries.get(i);

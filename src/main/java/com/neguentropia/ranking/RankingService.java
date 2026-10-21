@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 import org.springframework.stereotype.Service;
 
-/** Runs the three ranking sorts on the same prepared frequencies and times each one. */
 @Service
 public class RankingService {
     static final int TOP = 15;
@@ -39,7 +38,6 @@ public class RankingService {
         var results = new ArrayList<RankingResult>(METHODS.size());
         List<TermFrequency> reference = null;
         for (var method : METHODS) {
-            // Each run gets a fresh copy of the same input; only the sort itself is timed.
             var copy = new ArrayList<>(input);
             long start = System.nanoTime();
             var sorted = method.sort().apply(copy);
