@@ -37,7 +37,7 @@ The application listens on `0.0.0.0` inside the container. `PORT` changes the in
 {"status":"up","corpusState":"unavailable"}
 ```
 
-The HTTP contract is defined in an OpenAPI specification maintained outside this repository. The catalog `GET /api/papers`, the detail `GET /api/papers/{id}` and the ranking `POST /api/ranking` are implemented. The ranking receives an empty JSON object, sorts the same frequency list of the 20 abstracts with Counting, Radix and Bucket, checks that the three complete lists match and returns the top 15 and the time of each method. The explanations are in [docs/seguimiento-ranking-terminos.docx](docs/seguimiento-ranking-terminos.docx). Similarity, clustering, search and models are not implemented: their capabilities declare `available: false`, `blockedReason: NOT_IMPLEMENTED`. No external providers are enabled and the corpus is not downloaded.
+The HTTP contract is defined in an OpenAPI specification maintained outside this repository. The catalog `GET /api/papers`, the detail `GET /api/papers/{id}` and the ranking `POST /api/ranking` are implemented. The ranking receives an empty JSON object, sorts the same frequency list of the 20 abstracts with Counting, Radix and Bucket, checks that the three complete lists match and returns the top 15 and the time of each method. The explanations are in [ranking report](docs/Ranking%20de%20T%C3%A9rminos%20Mediante%20Algoritmos%20de%20Ordenamiento%20no%20Comparativos.docx). Similarity, clustering, search and models are not implemented: their capabilities declare `available: false`, `blockedReason: NOT_IMPLEMENTED`. No external providers are enabled and the corpus is not downloaded.
 
 ## External corpus and local preparation
 
@@ -58,7 +58,7 @@ The tests use manifests of twenty **synthetic** records in isolated temporary st
 
 ## Ranking measurement
 
-The [ranking report](docs/seguimiento-ranking-terminos.docx) records the
+The [ranking report](docs/Ranking%20de%20T%C3%A9rminos%20Mediante%20Algoritmos%20de%20Ordenamiento%20no%20Comparativos.docx) records the
 three independent JVM runs, rotated method order, 20 warmups and 100 measured
 runs per method/process, exact complete-output agreement, real top 15 and timing
 limitations. `RankingBenchmark` is a standalone offline entry point; it does not
