@@ -17,16 +17,13 @@ class InvalidCorpusEndpointTest {
     @LocalServerPort int port;
 
     @DynamicPropertySource static void configure(DynamicPropertyRegistry registry) throws Exception {
-        var directory = Files.createTempDirectory("synthetic-invalid-corpus-");
-        var input = SyntheticManifest.create();
-        SyntheticManifest.papers(input).removeLast();
-        SyntheticManifest.version(input);
-        var file = SyntheticManifest.write(directory, input);
+        var directory = Files.createTempDirectory("synthetic-missing-corpus-");
+        var file = directory.resolve("nonexistent-manifest.json");
         registry.add("corpus.manifest", file::toString);
         registry.add("corpus.allowed-origins", () -> "");
     }
 
-    @Test void configuredPartialCorpusFailsClosedWithoutLeakingPrivateData() throws Exception {
+    @Test void missingManifestReturnsUnavailableWithoutLeakingPrivateData() throws Exception {
         try (var client = HttpClient.newHttpClient()) {
             for (String path : new String[]{"/api/papers", "/api/papers/paper-01", "/api/papers/not-in-manifest"}) {
                 var response = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).build(),

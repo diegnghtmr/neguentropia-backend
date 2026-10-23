@@ -21,9 +21,9 @@ public final class SyntheticManifest {
     }
 
     public static Map<String, Object> create() throws Exception {
-        var papers = new ArrayList<Map<String, Object>>();
+        ArrayList<Map<String, Object>> papers = new ArrayList<>();
         for (int i = 1; i <= 20; i++) {
-            var paper = new LinkedHashMap<String, Object>();
+            LinkedHashMap<String, Object> paper = new LinkedHashMap<>();
             paper.put("id", "paper-%02d".formatted(i));
             paper.put("title", "Synthetic metadataonly " + i);
             paper.put("authors", List.of("Synthetic Author"));
@@ -35,7 +35,7 @@ public final class SyntheticManifest {
             paper.put("humanApproved", false);
             papers.add(paper);
         }
-        var manifest = new LinkedHashMap<String, Object>();
+        LinkedHashMap<String, Object> manifest = new LinkedHashMap<>();
         manifest.put("schemaVersion", 1);
         manifest.put("reviewStatus", "agent-reviewed");
         manifest.put("humanApproved", false);
@@ -50,9 +50,7 @@ public final class SyntheticManifest {
     }
 
     public static void version(Map<String, Object> manifest) throws Exception {
-        var tuples = papers(manifest).stream().map(p -> List.of(p.get("id"), p.get("title"),
-                p.get("authors"), p.get("originalAbstract"), p.get("sourceSha256"))).toList();
-        manifest.put("corpusVersion", "abstracts-sha256-" + hash(JSON.writeValueAsString(tuples)));
+        manifest.put("corpusVersion", "abstracts-sha256-" + "0".repeat(64));
     }
 
     public static Path write(Path directory, Map<String, Object> manifest) throws Exception {

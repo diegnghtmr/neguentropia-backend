@@ -60,6 +60,6 @@ class RankingCrossValidationTest {
 
     private static Paper paper(String abstractText) {
         return new Paper("synthetic", "Excluded title", List.of("Excluded author"),
-                abstractText, "", "", "", "", false);
+                abstractText, "");
     }
 }
