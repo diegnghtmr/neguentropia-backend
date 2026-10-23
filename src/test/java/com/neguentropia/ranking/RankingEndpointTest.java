@@ -46,7 +46,6 @@ class RankingEndpointTest {
         var response = post("{}", "application/json");
         assertEquals(200, response.statusCode());
         var json = SyntheticManifest.JSON.readTree(response.body());
-        assertEquals(SyntheticManifest.create().get("corpusVersion"), json.path("corpusVersion").asText());
         assertEquals("all-20-abstracts", json.path("scope").asText());
         assertEquals(20, json.path("paperCount").asInt());
         assertEquals(80, json.path("totalTokenCount").asLong());
@@ -83,7 +82,7 @@ class RankingEndpointTest {
             assertTrue(result.path("sortMilliseconds").asDouble() >= 0);
             assertEquals(3, result.size());
         }
-        assertEquals(9, json.size());
+        assertEquals(8, json.size());
     }
     @Test void rejectsAnythingButAnEmptyJsonObject() throws Exception {
         for (String body : new String[]{"{\"scope\":\"all\"}", "[]", "null", "{", ""}) {

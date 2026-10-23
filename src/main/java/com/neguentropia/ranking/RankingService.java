@@ -54,7 +54,7 @@ public class RankingService {
         if (!reference.equals(bucket)) throw new IllegalStateException("bucket-sort disagrees");
         results.add(new RankingResult("bucket-sort", bucket.subList(0, Math.min(TOP, bucket.size())),
                 elapsed / 1_000_000.0));
-        return new RankingResponse(corpus.corpusVersion(), PREPROCESSING, "all-20-abstracts", corpus.paperCount(),
+        return new RankingResponse(PREPROCESSING, "all-20-abstracts", corpus.paperCount(),
                 totalTokens, input.size(), maxFrequency,
                 new RankingParameters(RadixSort.BASE, "interval-counting", bucketCount, bucketWidth),
                 results);
@@ -73,7 +73,7 @@ public class RankingService {
                                 String termTieBreak) {}
     public record RankingParameters(int radixBase, String bucketStrategy, int bucketCount, long bucketWidth) {}
     public record RankingResult(String method, List<TermFrequency> topTerms, double sortMilliseconds) {}
-    public record RankingResponse(String corpusVersion, Preprocessing preprocessing, String scope, int paperCount,
+    public record RankingResponse(Preprocessing preprocessing, String scope, int paperCount,
                                   long totalTokenCount, long distinctTermCount, long maxFrequency,
                                   RankingParameters parameters, List<RankingResult> results) {}
 }

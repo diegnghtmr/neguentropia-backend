@@ -37,7 +37,6 @@ public final class RankingBenchmark {
         int bucketCount = BucketSort.bucketCount(input.size());
         long bucketWidth = BucketSort.bucketWidth(maximum, bucketCount);
         System.out.println("format=ranking-benchmark-v1");
-        System.out.println("corpus_version=" + manifest.corpusVersion());
         System.out.println("source_commit=" + sourceCommit);
         System.out.println("java_version=" + System.getProperty("java.version"));
         System.out.println("available_processors=" + Runtime.getRuntime().availableProcessors());
