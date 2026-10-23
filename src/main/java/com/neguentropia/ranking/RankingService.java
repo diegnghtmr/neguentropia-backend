@@ -4,16 +4,12 @@ import com.neguentropia.corpus.CorpusService;
 import com.neguentropia.corpus.TextPreparation;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.UnaryOperator;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RankingService {
     static final int TOP = 15;
-    private static final List<Method> METHODS = List.of(
-            new Method("counting-sort", CountingSort::sortDescending),
-            new Method("radix-sort", RadixSort::sortDescending),
-            new Method("bucket-sort", BucketSort::sortDescending));
     private static final Preprocessing PREPROCESSING = new Preprocessing(TextPreparation.VERSION, "NFC",
             "Locale.ROOT-lowercase", "unicode-letter-mark-digit-runs-with-letter", false, false, "manifest",
             "first-occurrence");
@@ -25,35 +21,52 @@ public class RankingService {
     public boolean ready() { return corpus.ready(); }
 
     public RankingResponse rank() {
-        if (!corpus.ready()) throw new IllegalStateException("corpus is unavailable");
-        var input = TermFrequency.listOf(corpus.frequencies());
+        List<TermFrequency> input = termFrequencies(corpus.frequencies());
         long totalTokens = 0;
         long maxFrequency = 0;
-        for (var entry : input) {
+        for (TermFrequency entry : input) {
             totalTokens += entry.frequency();
             if (entry.frequency() > maxFrequency) maxFrequency = entry.frequency();
         }
-        var bucket = BucketSort.Parameters.forInput(input);
+        int bucketCount = BucketSort.bucketCount(input.size());
+        long bucketWidth = BucketSort.bucketWidth(maxFrequency, bucketCount);
+        ArrayList<RankingResult> results = new ArrayList<>(3);
 
-        var results = new ArrayList<RankingResult>(METHODS.size());
-        List<TermFrequency> reference = null;
-        for (var method : METHODS) {
-            var copy = new ArrayList<>(input);
-            long start = System.nanoTime();
-            var sorted = method.sort().apply(copy);
-            long elapsed = System.nanoTime() - start;
-            if (reference == null) reference = sorted;
-            else if (!reference.equals(sorted)) throw new IllegalStateException(method.name() + " disagrees");
-            results.add(new RankingResult(method.name(), sorted.subList(0, Math.min(TOP, sorted.size())),
-                    elapsed / 1_000_000.0));
-        }
+        ArrayList<TermFrequency> countingInput = new ArrayList<>(input);
+        long start = System.nanoTime();
+        List<TermFrequency> reference = CountingSort.sortDescending(countingInput);
+        long elapsed = System.nanoTime() - start;
+        results.add(new RankingResult("counting-sort", reference.subList(0, Math.min(TOP, reference.size())),
+                elapsed / 1_000_000.0));
+
+        ArrayList<TermFrequency> radixInput = new ArrayList<>(input);
+        start = System.nanoTime();
+        List<TermFrequency> radix = RadixSort.sortDescending(radixInput);
+        elapsed = System.nanoTime() - start;
+        if (!reference.equals(radix)) throw new IllegalStateException("radix-sort disagrees");
+        results.add(new RankingResult("radix-sort", radix.subList(0, Math.min(TOP, radix.size())),
+                elapsed / 1_000_000.0));
+
+        ArrayList<TermFrequency> bucketInput = new ArrayList<>(input);
+        start = System.nanoTime();
+        List<TermFrequency> bucket = BucketSort.sortDescending(bucketInput);
+        elapsed = System.nanoTime() - start;
+        if (!reference.equals(bucket)) throw new IllegalStateException("bucket-sort disagrees");
+        results.add(new RankingResult("bucket-sort", bucket.subList(0, Math.min(TOP, bucket.size())),
+                elapsed / 1_000_000.0));
         return new RankingResponse(corpus.corpusVersion(), PREPROCESSING, "all-20-abstracts", corpus.paperCount(),
                 totalTokens, input.size(), maxFrequency,
-                new RankingParameters(RadixSort.BASE, "interval-counting", bucket.bucketCount(), bucket.bucketWidth()),
-                List.copyOf(results));
+                new RankingParameters(RadixSort.BASE, "interval-counting", bucketCount, bucketWidth),
+                results);
     }
 
-    private record Method(String name, UnaryOperator<List<TermFrequency>> sort) {}
+    public static List<TermFrequency> termFrequencies(Map<String, Long> frequencies) {
+        ArrayList<TermFrequency> terms = new ArrayList<>(frequencies.size());
+        for (Map.Entry<String, Long> entry : frequencies.entrySet()) {
+            terms.add(new TermFrequency(entry.getKey(), entry.getValue()));
+        }
+        return terms;
+    }
 
     public record Preprocessing(String version, String unicodeNormalization, String caseRule, String tokenRule,
                                 boolean stopwordsRemoved, boolean stemmingApplied, String documentOrder,

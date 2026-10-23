@@ -19,7 +19,7 @@ public class RankingController {
     public RankingController(RankingService ranking) { this.ranking = ranking; }
 
     @PostMapping("/api/ranking")
-    public ResponseEntity<?> rank(@RequestBody(required = false) JsonNode body) {
+    public ResponseEntity<Object> rank(@RequestBody(required = false) JsonNode body) {
         if (body == null || !body.isObject() || !body.isEmpty()) return ResponseEntity.badRequest().body(INVALID_INPUT);
         if (!ranking.ready()) {
             return ResponseEntity.status(503).body(new ApiError("CORPUS_UNAVAILABLE", "Corpus is unavailable."));

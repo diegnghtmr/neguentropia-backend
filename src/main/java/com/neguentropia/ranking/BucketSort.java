@@ -1,70 +1,52 @@
 package com.neguentropia.ranking;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 
 public final class BucketSort {
     private BucketSort() {}
 
-    public record Parameters(int bucketCount, long bucketWidth) {
-        public static Parameters forInput(List<TermFrequency> entries) {
-            Objects.requireNonNull(entries, "entries");
-            long maximum = 0;
-            var terms = new HashSet<String>();
-            for (var entry : entries) {
-                Objects.requireNonNull(entry, "entry");
-                if (!terms.add(entry.term())) {
-                    throw new IllegalArgumentException("duplicate term: " + entry.term());
-                }
-                if (entry.frequency() > maximum) maximum = entry.frequency();
-            }
-            if (entries.isEmpty()) return new Parameters(0, 0);
-            if (maximum == Long.MAX_VALUE) {
-                throw new IllegalArgumentException("frequency range exceeds long arithmetic");
-            }
-            int count = Math.max(1, (int) Math.sqrt(entries.size()));
-            long range = maximum + 1L;
-            // Quotient plus remainder avoids overflowing range + count - 1.
-            long width = range / count + (range % count == 0 ? 0 : 1);
-            return new Parameters(count, width);
-        }
+    public static int bucketCount(int termCount) {
+        return Math.max(1, (int) Math.sqrt(termCount));
+    }
+
+    public static long bucketWidth(long maxFrequency, int bucketCount) {
+        return (maxFrequency + bucketCount) / bucketCount;
     }
 
     public static List<TermFrequency> sortDescending(List<TermFrequency> entries) {
-        var parameters = Parameters.forInput(entries);
-        if (entries.isEmpty()) return List.of();
-        long width = parameters.bucketWidth();
-        if (width > Integer.MAX_VALUE - 8L) {
-            throw new IllegalArgumentException("bucket width exceeds supported array length");
+        long maximum = 0;
+        for (TermFrequency entry : entries) {
+            if (entry.frequency() > maximum) maximum = entry.frequency();
         }
-        var buckets = new ArrayList<ArrayList<TermFrequency>>(parameters.bucketCount());
-        for (int q = 0; q < parameters.bucketCount(); q++) buckets.add(new ArrayList<>());
-        for (var entry : entries) {
+        int count = bucketCount(entries.size());
+        long width = bucketWidth(maximum, count);
+        ArrayList<ArrayList<TermFrequency>> buckets = new ArrayList<>(count);
+        for (int q = 0; q < count; q++) buckets.add(new ArrayList<>());
+        for (TermFrequency entry : entries) {
             int q = (int) (entry.frequency() / width);
             buckets.get(q).add(entry);
         }
-        var output = new ArrayList<TermFrequency>(entries.size());
-        for (int q = parameters.bucketCount() - 1; q >= 0; q--) {
-            var bucket = buckets.get(q);
+        ArrayList<TermFrequency> output = new ArrayList<>(entries.size());
+        for (int q = count - 1; q >= 0; q--) {
+            ArrayList<TermFrequency> bucket = buckets.get(q);
             if (bucket.isEmpty()) continue;
             appendCountingDescending(bucket, q * width, (int) width, output);
         }
-        return List.copyOf(output);
+        return output;
     }
 
     private static void appendCountingDescending(List<TermFrequency> bucket, long low,
                                                   int width, List<TermFrequency> output) {
-        var counts = new int[width];
-        for (var entry : bucket) counts[(int) (entry.frequency() - low)]++;
+        int[] counts = new int[width];
+        for (TermFrequency entry : bucket) counts[(int) (entry.frequency() - low)]++;
         for (int key = width - 2; key >= 0; key--) counts[key] += counts[key + 1];
-        var local = new TermFrequency[bucket.size()];
+        TermFrequency[] local = new TermFrequency[bucket.size()];
         for (int i = bucket.size() - 1; i >= 0; i--) {
-            var entry = bucket.get(i);
+            TermFrequency entry = bucket.get(i);
             int key = (int) (entry.frequency() - low);
             local[--counts[key]] = entry;
         }
-        for (var entry : local) output.add(entry);
+        for (TermFrequency entry : local) output.add(entry);
     }
 }
