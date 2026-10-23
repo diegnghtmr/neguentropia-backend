@@ -31,7 +31,7 @@ The application listens on `0.0.0.0` inside the container. `PORT` changes the in
 
 ## Contract and scope
 
-`GET /api/health` reports the health of the process, not the availability of the data. Without a configured and validated manifest, the contractual response is HTTP 200 with:
+`GET /api/health` reports the health of the process, not the availability of the data. Without a loaded manifest, the contractual response is HTTP 200 with:
 
 ```json
 {"status":"up","corpusState":"unavailable"}
@@ -44,17 +44,17 @@ The HTTP contract is defined in an OpenAPI specification maintained outside this
 | Setting | Behavior |
 | --- | --- |
 | `CORPUS_MANIFEST` | Internal path of the single private manifest file; empty by default. Mount it externally read-only; never copy it into the repository, resources or image. |
-| `CORS_ALLOWED_ORIGINS` | Comma-separated list of explicit local origins, for example `http://127.0.0.1:4174`. Empty by default; wildcards, credentials, paths and external hosts are not accepted. An invalid entry closes the whole list. |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated origins applied as configured, for example `http://127.0.0.1:4174`. Whitespace is stripped and empty entries are ignored. Empty by default: CORS stays closed. GET and POST are allowed without credentials. |
 
 The local runtime must use the owner's UID/GID if the manifest keeps `0600` permissions; do not widen permissions to make it readable. The manifest's `sourceFile` paths are provenance references: **they are not opened, resolved or interpreted as input paths**. The application does not read any PDF either, and corpus paths are not accepted over HTTP.
 
-Loading happens once at startup. It requires the private format `schemaVersion: 1`, review `agent-reviewed`, `humanApproved: false` and exactly twenty complete records in the order `paper-01`…`paper-20`. It checks fields/types, well-formed Unicode, abstract usefulness, uniqueness of sources/texts/IDs, the SHA-256 of the UTF-8 original and the `abstracts-sha256-` version computed over the ordered JSON tuples `[id,title,authors,originalAbstract,sourceSha256]`. The source hash is validated structurally and for uniqueness; checking its bytes belongs to the private curation, not to the runtime, which does not open PDFs.
+The application reads the curated manifest once at startup and trusts it without runtime integrity validation. It maps each paper's `id`, `title`, `authors`, `originalAbstract` and `abstractSha256`, and takes `corpusVersion` as provided. It does not recompute hashes or the corpus version; curation is responsible for the content, completeness and order of the twenty records.
 
-A missing, unreadable, invalid or partial configuration leaves the whole corpus unavailable: catalog and detail return HTTP 503 `CORPUS_UNAVAILABLE`, even for an unknown ID. With the corpus ready, health returns `up`/`ready`, the catalog includes twenty summaries and capabilities, the detail keeps the exact original and its hash, and an unknown ID returns HTTP 404 `PAPER_NOT_FOUND`. Responses do not include private references, review flags or loading failure details.
+Missing or empty configuration, an unreadable manifest file or a loading failure leaves the corpus unavailable: catalog, detail and ranking return HTTP 503 `CORPUS_UNAVAILABLE`, even for an unknown ID, while health reports `up`/`unavailable`. An incomplete but readable manifest is not rejected by runtime integrity checks. With the corpus ready, health returns `up`/`ready`, the catalog includes twenty summaries and capabilities, the detail keeps the exact original and its hash, and an unknown ID returns HTTP 404 `PAPER_NOT_FOUND`. Responses do not include private references, review flags or loading failure details.
 
 `TextPreparation` computes in Java the NFC `baseText` and the tokens NFC → `Locale.ROOT` lowercase → NFC; it keeps runs of Unicode letters/marks/digits only if they contain a letter. It does not remove stopwords or apply stemming, translation or lemmatization. The `unicode-nfc-root-v1` preparation, the originals and the frequencies stay in RAM: only abstracts are traversed, in manifest order, keeping the first appearance of terms through a `LinkedHashMap`. There is no TF-IDF, frequency sorting or additional analysis path.
 
-The tests use manifests of twenty **synthetic** records in isolated temporary state; they do not prove the integration with the real data. They include fail-closed validation, Unicode preparation, HTTP, allowed/rejected/closed-by-default CORS and the health regression without a corpus.
+The behavior tests use **synthetic** data in isolated temporary state; they do not prove integration with the real corpus. Coverage includes the three sorts' worked examples, stability, permutations, unchanged inputs, cross-validation against an independent oracle, Unicode preparation, HTTP 200/400/404/503, allowed/rejected/closed-by-default CORS and health without a corpus.
 
 ## Ranking measurement
 
@@ -62,7 +62,11 @@ The [ranking report](docs/Ranking%20de%20T%C3%A9rminos%20Mediante%20Algoritmos%2
 three independent JVM runs, rotated method order, 20 warmups and 100 measured
 runs per method/process, exact complete-output agreement, real top 15 and timing
 limitations. `RankingBenchmark` is a standalone offline entry point; it does not
-start the HTTP server. Its manifest must remain externally mounted read-only.
+start the HTTP server. Its arguments are the manifest path and the comma-separated
+method order, for example `counting,radix,bucket`. It prints `corpus_version` from
+the manifest and `source_commit` from the JVM property `-Dbenchmark.sourceCommit`
+as given, without validating either value. Its manifest must remain externally
+mounted read-only.
 
 ## Repository contents
 
