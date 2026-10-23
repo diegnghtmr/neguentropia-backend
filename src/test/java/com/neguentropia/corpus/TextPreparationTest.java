@@ -29,15 +29,15 @@ class TextPreparationTest {
         } finally { Locale.setDefault(previous); }
     }
     @Test void countsOnlyAbstractsInFirstAppearanceOrderReproducibly() throws Exception {
-        var manifest = new CorpusLoader(SyntheticManifest.JSON).load(
+        List<CorpusLoader.Paper> papers = new CorpusLoader(SyntheticManifest.JSON).load(
                 SyntheticManifest.write(directory, SyntheticManifest.create()));
-        var first = TextPreparation.frequencies(manifest.papers());
+        var first = TextPreparation.frequencies(papers);
         assertEquals(40L, first.get("árbol"));
         assertEquals(20L, first.get("ia2"));
         assertFalse(first.containsKey("metadataonly"));
         assertFalse(first.containsKey("author"));
         List<String> firstTerms = new ArrayList<>(first.keySet()).subList(0, 4);
         assertEquals(List.of("árbol", "ia2", "synthetic1", "synthetic2"), firstTerms);
-        assertEquals(first, TextPreparation.frequencies(manifest.papers()));
+        assertEquals(first, TextPreparation.frequencies(papers));
     }
 }

@@ -26,8 +26,8 @@ public final class RankingBenchmark {
     private static void run(String[] args) throws Exception {
         String[] order = args[1].split(",");
         String sourceCommit = System.getProperty("benchmark.sourceCommit");
-        CorpusLoader.Manifest manifest = new CorpusLoader(JsonMapper.builder().build()).load(Path.of(args[0]));
-        List<TermFrequency> input = RankingService.termFrequencies(TextPreparation.frequencies(manifest.papers()));
+        List<CorpusLoader.Paper> papers = new CorpusLoader(JsonMapper.builder().build()).load(Path.of(args[0]));
+        List<TermFrequency> input = RankingService.termFrequencies(TextPreparation.frequencies(papers));
         long tokens = 0;
         long maximum = 0;
         for (TermFrequency entry : input) {
@@ -42,7 +42,7 @@ public final class RankingBenchmark {
         System.out.println("available_processors=" + Runtime.getRuntime().availableProcessors());
         System.out.println("order=" + String.join(",", order));
         System.out.println("warmups=" + WARMUPS + " measurements=" + MEASUREMENTS);
-        System.out.println("papers=" + manifest.papers().size() + " vocabulary=" + input.size()
+        System.out.println("papers=" + papers.size() + " vocabulary=" + input.size()
                 + " tokens=" + tokens + " fmax=" + maximum + " radix_passes=" + RadixSort.passCount(maximum)
                 + " buckets=" + bucketCount + " width=" + bucketWidth);
         List<TermFrequency> reference = null;

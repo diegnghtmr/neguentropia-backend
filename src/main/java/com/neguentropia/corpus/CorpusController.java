@@ -22,21 +22,19 @@ public class CorpusController {
     @GetMapping
     public ResponseEntity<Object> catalog() {
         if (!corpus.ready()) return unavailable();
-        CorpusLoader.Manifest manifest = corpus.manifest();
         ArrayList<PaperSummary> summaries = new ArrayList<>();
-        for (CorpusLoader.Paper paper : manifest.papers()) {
+        for (CorpusLoader.Paper paper : corpus.papers()) {
             summaries.add(new PaperSummary(paper.id(), paper.title(), paper.authors()));
         }
-        return ResponseEntity.ok(new PaperCatalog(manifest.corpusVersion(), "ready", summaries, CAPABILITIES));
+        return ResponseEntity.ok(new PaperCatalog("ready", summaries, CAPABILITIES));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Object> detail(@PathVariable String id) {
         if (!corpus.ready()) return unavailable();
-        CorpusLoader.Manifest manifest = corpus.manifest();
-        for (CorpusLoader.Paper paper : manifest.papers()) {
-            if (paper.id().equals(id)) return ResponseEntity.ok(new PaperDetail(manifest.corpusVersion(), paper.id(),
-                    paper.title(), paper.authors(), paper.originalAbstract(), paper.abstractSha256()));
+        for (CorpusLoader.Paper paper : corpus.papers()) {
+            if (paper.id().equals(id)) return ResponseEntity.ok(new PaperDetail(paper.id(), paper.title(),
+                    paper.authors(), paper.originalAbstract()));
         }
         return ResponseEntity.status(404).body(new ApiError("PAPER_NOT_FOUND", "Paper was not found."));
     }
@@ -55,10 +53,8 @@ public class CorpusController {
 
     public record ApiError(String code, String message) {}
     public record PaperSummary(String id, String title, List<String> authors) {}
-    public record PaperDetail(String corpusVersion, String id, String title, List<String> authors,
-                              String originalAbstract, String abstractSha256) {}
-    public record PaperCatalog(String corpusVersion, String corpusState, List<PaperSummary> papers,
-                               Capabilities capabilities) {}
+    public record PaperDetail(String id, String title, List<String> authors, String originalAbstract) {}
+    public record PaperCatalog(String corpusState, List<PaperSummary> papers, Capabilities capabilities) {}
     public record Availability(boolean available, String blockedReason) {}
     public record SimilarityCapability(String method, Availability availability) {}
     public record Capabilities(Availability ranking, Availability clustering, Availability search,

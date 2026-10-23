@@ -14,20 +14,18 @@ public final class CorpusLoader {
         this.mapper = mapper;
     }
 
-    public Manifest load(Path path) throws Exception {
+    public List<Paper> load(Path path) throws Exception {
         JsonNode root = mapper.readTree(Files.readString(path));
-        String version = root.get("corpusVersion").stringValue();
         ArrayList<Paper> papers = new ArrayList<>();
         for (JsonNode record : root.get("papers")) {
             ArrayList<String> authors = new ArrayList<>();
             for (JsonNode author : record.get("authors")) authors.add(author.stringValue());
             papers.add(new Paper(record.get("id").stringValue(), record.get("title").stringValue(), authors,
-                    record.get("originalAbstract").stringValue(), record.get("abstractSha256").stringValue()));
+                    record.get("originalAbstract").stringValue(), record.get("sourceFile").stringValue()));
         }
-        return new Manifest(version, papers);
+        return papers;
     }
 
-    public record Manifest(String corpusVersion, List<Paper> papers) {}
     public record Paper(String id, String title, List<String> authors, String originalAbstract,
-                        String abstractSha256) {}
+                        String sourceFile) {}
 }

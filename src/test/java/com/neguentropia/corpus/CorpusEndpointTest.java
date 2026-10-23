@@ -37,6 +37,7 @@ class CorpusEndpointTest {
         var response = get("/api/papers", null, false);
         assertEquals(200, response.statusCode());
         var json = SyntheticManifest.JSON.readTree(response.body());
+        assertEquals(3, json.size());
         assertEquals("ready", json.path("corpusState").asText());
         assertEquals(20, json.path("papers").size());
         assertEquals("paper-01", json.path("papers").get(0).path("id").asText());
@@ -56,7 +57,6 @@ class CorpusEndpointTest {
         }
         assertEquals(java.util.Set.of("levenshtein", "lcs", "tf-idf-cosine", "jaccard", "gemini-embeddings", "local-embeddings"), methods);
         assertFalse(response.body().contains("sourceFile"));
-        assertFalse(response.body().contains("humanApproved"));
         assertFalse(response.body().contains("originalAbstract"));
     }
     @Test void detailPreservesExactUnicodeAndOnlyPublicFields() throws Exception {
@@ -65,8 +65,7 @@ class CorpusEndpointTest {
         var json = SyntheticManifest.JSON.readTree(response.body());
         var expected = SyntheticManifest.papers(SyntheticManifest.create()).getFirst();
         assertEquals(expected.get("originalAbstract"), json.path("originalAbstract").asText());
-        assertEquals(expected.get("abstractSha256"), json.path("abstractSha256").asText());
-        assertEquals(6, json.size());
+        assertEquals(4, json.size());
         assertFalse(response.body().contains("source"));
         assertFalse(response.body().contains("review"));
     }
