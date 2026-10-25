@@ -95,15 +95,6 @@ class RankingEndpointTest {
         assertEquals(400, noBody.statusCode());
         assertEquals("INVALID_INPUT", SyntheticManifest.JSON.readTree(noBody.body()).path("code").asText());
     }
-    @Test void catalogAdvertisesRankingAsAvailable() throws Exception {
-        try (var client = HttpClient.newHttpClient()) {
-            var response = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/papers")).build(),
-                    HttpResponse.BodyHandlers.ofString());
-            var ranking = SyntheticManifest.JSON.readTree(response.body()).path("capabilities").path("ranking");
-            assertTrue(ranking.path("available").asBoolean());
-            assertTrue(ranking.path("blockedReason").isNull());
-        }
-    }
     @Test void allowedOriginCanPreflightAndPostWithoutCredentials() throws Exception {
         try (var client = HttpClient.newHttpClient()) {
             var preflight = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/ranking"))

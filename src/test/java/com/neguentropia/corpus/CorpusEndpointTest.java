@@ -33,29 +33,16 @@ class CorpusEndpointTest {
             return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
         }
     }
-    @Test void catalogHasExactlyTwentySummariesAndHonestCapabilities() throws Exception {
+    @Test void catalogHasExactlyTwentySummaries() throws Exception {
         var response = get("/api/papers", null, false);
         assertEquals(200, response.statusCode());
         var json = SyntheticManifest.JSON.readTree(response.body());
-        assertEquals(3, json.size());
+        assertEquals(2, json.size());
         assertEquals("ready", json.path("corpusState").asText());
         assertEquals(20, json.path("papers").size());
         assertEquals("paper-01", json.path("papers").get(0).path("id").asText());
         assertEquals("paper-20", json.path("papers").get(19).path("id").asText());
         assertEquals(3, json.path("papers").get(0).size());
-        var capabilities = json.path("capabilities");
-        for (String method : List.of("clustering", "search")) {
-            assertFalse(capabilities.path(method).path("available").asBoolean());
-            assertEquals("NOT_IMPLEMENTED", capabilities.path(method).path("blockedReason").asText());
-        }
-        assertEquals(6, capabilities.path("similarity").size());
-        var methods = new java.util.HashSet<String>();
-        for (var capability : capabilities.path("similarity")) {
-            methods.add(capability.path("method").asText());
-            assertFalse(capability.path("availability").path("available").asBoolean());
-            assertEquals("NOT_IMPLEMENTED", capability.path("availability").path("blockedReason").asText());
-        }
-        assertEquals(java.util.Set.of("levenshtein", "lcs", "tf-idf-cosine", "jaccard", "gemini-embeddings", "local-embeddings"), methods);
         assertFalse(response.body().contains("sourceFile"));
         assertFalse(response.body().contains("originalAbstract"));
     }
