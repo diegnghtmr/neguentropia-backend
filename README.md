@@ -37,7 +37,33 @@ The application listens on `0.0.0.0` inside the container. `PORT` changes the in
 {"status":"up","corpusState":"unavailable"}
 ```
 
-The HTTP contract is defined in an OpenAPI specification maintained outside this repository. The catalog `GET /api/papers`, the detail `GET /api/papers/{id}` and the ranking `POST /api/ranking` are implemented. The ranking receives an empty JSON object, sorts the same frequency list of the 20 abstracts with Counting, Radix and Bucket, checks that the three complete lists match and returns the top 15 and the time of each method. The explanations are in [ranking report](docs/Ranking%20de%20T%C3%A9rminos%20Mediante%20Algoritmos%20de%20Ordenamiento%20no%20Comparativos.docx). `POST /api/similarity` compares 2–20 distinct papers using Levenshtein, longest common subsequence (LCS), TF-IDF cosine and Jaccard. It accepts `paperIds` and `methods`, returns every selected pair in manifest order and preserves the requested method order. TF-IDF is fitted once over all twenty abstracts. Each result includes its score, explanatory data and kernel computation time. Embedding methods return HTTP 503 `PROVIDER_UNAVAILABLE`. No partial results are returned. Clustering and search are not implemented, and the corpus is not downloaded.
+The HTTP contract is defined in an OpenAPI specification maintained outside this repository. The catalog `GET /api/papers`, the detail `GET /api/papers/{id}` and the ranking `POST /api/ranking` are implemented. The ranking receives an empty JSON object, sorts the same frequency list of the 20 abstracts with Counting, Radix and Bucket, checks that the three complete lists match and returns the top 15 and the time of each method. The explanations are in [ranking report](docs/Ranking%20de%20T%C3%A9rminos%20Mediante%20Algoritmos%20de%20Ordenamiento%20no%20Comparativos.docx). `POST /api/similarity` compares 2–20 distinct papers using Levenshtein, longest common subsequence (LCS), TF-IDF cosine and Jaccard. It accepts `paperIds` and `methods`, returns every selected pair in manifest order and preserves the requested method order. TF-IDF is fitted once over all twenty abstracts. Each result includes its score, explanatory data and kernel computation time. `gemini-embeddings` compares pre-generated Gemini Embedding 2 vectors using explicit Java cosine in [-1,1]. Results identify the model configuration and dimension, with cosine-only timings; `embeddingRuns` reports the configuration and original input token counts for the selected papers in manifest order. Requests never call the provider. `local-embeddings` returns HTTP 503 `PROVIDER_UNAVAILABLE`. Without a valid vector file, the requested embedding method returns HTTP 503 `PROVIDER_UNAVAILABLE`. No partial results are returned. Clustering and search are not implemented, and the corpus is not downloaded.
+
+### Gemini vector generation
+
+`GeminiEmbeddingGenerator` is a standalone command, separate from the HTTP server. With corpus transfer permission and an API budget, generate one private vector file using `GEMINI_API_KEY` exported in the invoking shell. The command reads the key only from the environment, never from a file. Each complete NFC abstract is prefixed with `task: sentence similarity | query: `, counted with the model's `countTokens` endpoint (maximum 8192), then embedded with `gemini-embedding-2` (3072 dimensions). It stops on errors without retries; it never truncates or substitutes a provider.
+
+After building the runnable image, run from this directory with the corpus and a private writable output directory available at the paths below:
+
+```sh
+docker run --rm --user "$(id -u):$(id -g)" --entrypoint java \
+  -e GEMINI_API_KEY \
+  --mount "type=bind,src=$CORPUS_FILE,dst=/data/corpus.json,readonly" \
+  --mount "type=bind,src=$VECTOR_DIRECTORY,dst=/vectors" \
+  neguentropia-backend \
+  -Dloader.main=com.neguentropia.similarity.GeminiEmbeddingGenerator \
+  -cp /app/application.jar org.springframework.boot.loader.launch.PropertiesLauncher \
+  /data/corpus.json /vectors/gemini.json
+```
+
+Keep the generated file outside the repository and image. Mount it read-only when starting the server, adding these options before the image name in the runtime command:
+
+```sh
+-e GEMINI_EMBEDDINGS=/vectors/gemini.json \
+--mount "type=bind,src=$VECTOR_DIRECTORY/gemini.json,dst=/vectors/gemini.json,readonly"
+```
+
+`GEMINI_EMBEDDINGS` is empty by default. The server loads the file once at startup, trusting its curated content (one record per corpus paper, in corpus order) as it does with the corpus file. An unreadable file leaves Gemini unavailable without blocking classical methods. Restart after replacing either file; regenerate vectors whenever the corpus or embedding configuration changes. The API key is not needed by the HTTP server.
 
 ## External corpus and local preparation
 
