@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class RankingService {
     public static final int TOP = 15;
-    private static final Preprocessing PREPROCESSING = new Preprocessing(TextPreparation.VERSION, "NFC",
+    public static final Preprocessing PREPROCESSING = new Preprocessing(TextPreparation.VERSION, "NFC",
             "Locale.ROOT-lowercase", "unicode-letter-mark-digit-runs-with-letter", false, false, "manifest",
             "first-occurrence");
 
