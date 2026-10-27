@@ -47,7 +47,7 @@ public class SimilarityController {
                 return ResponseEntity.status(404).body(new ApiError("PAPER_NOT_FOUND", "Paper was not found."));
             }
         }
-        if (methods.contains("local-embeddings")
+        if ((methods.contains("local-embeddings") && !similarity.localReady())
                 || (methods.contains("gemini-embeddings") && !similarity.geminiReady())) {
             return ResponseEntity.status(503).body(new ApiError("PROVIDER_UNAVAILABLE", "Embedding provider is unavailable."));
         }

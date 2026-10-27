@@ -18,12 +18,15 @@ public class SimilarityService {
     private final double[][] vectors;
 
     private final EmbeddingVectors gemini;
+    private final EmbeddingVectors local;
 
     public SimilarityService(CorpusService corpus, JsonMapper mapper,
-                             @Value("${embeddings.gemini:}") String configured) {
+                             @Value("${embeddings.gemini:}") String configured,
+                             @Value("${embeddings.local:}") String configuredLocal) {
         this.corpus = corpus;
         if (corpus.ready()) {
             gemini = EmbeddingVectors.load(mapper, configured);
+            local = EmbeddingVectors.load(mapper, configuredLocal);
             for (Paper paper : corpus.papers()) {
                 List<String> prepared = TextPreparation.tokens(paper.originalAbstract());
                 tokens.add(prepared);
@@ -32,6 +35,7 @@ public class SimilarityService {
             vectors = TfIdf.fit(tokens);
         } else {
             gemini = null;
+            local = null;
             vectors = new double[0][];
         }
     }
@@ -41,6 +45,9 @@ public class SimilarityService {
     }
     public boolean geminiReady() {
         return gemini != null;
+    }
+    public boolean localReady() {
+        return local != null;
     }
 
     public boolean containsPaper(String id) {
@@ -76,8 +83,8 @@ public class SimilarityService {
         }
         ArrayList<Object> embeddingRuns = new ArrayList<>();
         for (String method : methods) {
-            if (method.equals("gemini-embeddings")) {
-                EmbeddingVectors loaded = gemini;
+            if (method.equals("gemini-embeddings") || method.equals("local-embeddings")) {
+                EmbeddingVectors loaded = embeddingsFor(method);
                 ArrayList<VectorAcquisition> acquisitions = new ArrayList<>();
                 for (int index : indices) {
                     EmbeddingVectors.PaperVector paper = loaded.papers.get(index);
@@ -126,7 +133,7 @@ public class SimilarityService {
             return new JaccardResult(method, "token-sets", result.score(), result.intersectionSize(), result.unionSize(),
                     elapsed / 1_000_000.0);
         }
-        EmbeddingVectors loaded = gemini;
+        EmbeddingVectors loaded = embeddingsFor(method);
         double[] leftVector = loaded.papers.get(left).values();
         double[] rightVector = loaded.papers.get(right).values();
         long start = System.nanoTime();
@@ -134,6 +141,13 @@ public class SimilarityService {
         long elapsed = System.nanoTime() - start;
         return new EmbeddingResult(method, "embedding", "cosine", score, loaded.configuration.id(),
                 loaded.configuration.dimension(), elapsed / 1_000_000.0);
+    }
+
+    private EmbeddingVectors embeddingsFor(String method) {
+        if (method.equals("gemini-embeddings")) {
+            return gemini;
+        }
+        return local;
     }
 
     public record LevenshteinResult(String method, String representation, double score, int distance,

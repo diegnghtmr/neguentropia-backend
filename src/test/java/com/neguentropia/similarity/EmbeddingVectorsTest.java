@@ -5,6 +5,7 @@ import com.neguentropia.corpus.SyntheticManifest;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,12 +34,24 @@ public class EmbeddingVectorsTest {
         Path manifest = SyntheticManifest.write(directory, SyntheticManifest.create());
         Path vectors = EmbeddingEndpointTest.writeVectors(directory, "vectors.json", EmbeddingEndpointTest.GEMINI, 10);
         CorpusService corpus = new CorpusService(SyntheticManifest.JSON, manifest.toString());
-        SimilarityService service = new SimilarityService(corpus, SyntheticManifest.JSON, vectors.toString());
+        SimilarityService service = new SimilarityService(corpus, SyntheticManifest.JSON, vectors.toString(), "");
         Files.writeString(vectors, "{}");
         assertTrue(service.geminiReady());
         var response = service.compare(List.of("paper-02", "paper-01"), List.of("gemini-embeddings"));
         var result = (SimilarityService.EmbeddingResult) response.pairs().get(0).results().get(0);
         assertEquals(0.8, result.score(), 1e-12);
         assertEquals(1, response.embeddingRuns().size());
+    }
+
+    @Test public void anUnavailableProviderFailsTheWholeRequestEvenWhenTheOtherIsLoaded() throws Exception {
+        Path manifest = SyntheticManifest.write(directory, SyntheticManifest.create());
+        Path gemini = EmbeddingEndpointTest.writeVectors(directory, "gemini.json", EmbeddingEndpointTest.GEMINI, 10);
+        CorpusService corpus = new CorpusService(SyntheticManifest.JSON, manifest.toString());
+        SimilarityService service = new SimilarityService(corpus, SyntheticManifest.JSON, gemini.toString(), "");
+        SimilarityController controller = new SimilarityController(service);
+        var response = controller.compare(SyntheticManifest.JSON.valueToTree(Map.of(
+                "paperIds", List.of("paper-01", "paper-02"), "methods", List.of("gemini-embeddings", "local-embeddings"))));
+        assertEquals(503, response.getStatusCode().value());
+        assertEquals("PROVIDER_UNAVAILABLE", SyntheticManifest.JSON.valueToTree(response.getBody()).path("code").asText());
     }
 }

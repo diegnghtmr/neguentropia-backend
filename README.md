@@ -37,7 +37,7 @@ The application listens on `0.0.0.0` inside the container. `PORT` changes the in
 {"status":"up","corpusState":"unavailable"}
 ```
 
-The HTTP contract is defined in an OpenAPI specification maintained outside this repository. The catalog `GET /api/papers`, the detail `GET /api/papers/{id}` and the ranking `POST /api/ranking` are implemented. The ranking receives an empty JSON object, sorts the same frequency list of the 20 abstracts with Counting, Radix and Bucket, checks that the three complete lists match and returns the top 15 and the time of each method. The explanations are in [ranking report](docs/Ranking%20de%20T%C3%A9rminos%20Mediante%20Algoritmos%20de%20Ordenamiento%20no%20Comparativos.docx). `POST /api/similarity` compares 2–20 distinct papers using Levenshtein, longest common subsequence (LCS), TF-IDF cosine and Jaccard. It accepts `paperIds` and `methods`, returns every selected pair in manifest order and preserves the requested method order. TF-IDF is fitted once over all twenty abstracts. Each result includes its score, explanatory data and kernel computation time. `gemini-embeddings` compares pre-generated Gemini Embedding 2 vectors using explicit Java cosine in [-1,1]. Results identify the model configuration and dimension, with cosine-only timings; `embeddingRuns` reports the configuration and original input token counts for the selected papers in manifest order. Requests never call the provider. `local-embeddings` returns HTTP 503 `PROVIDER_UNAVAILABLE`. Without a valid vector file, the requested embedding method returns HTTP 503 `PROVIDER_UNAVAILABLE`. No partial results are returned. Clustering and search are not implemented, and the corpus is not downloaded.
+The HTTP contract is defined in an OpenAPI specification maintained outside this repository. The catalog `GET /api/papers`, the detail `GET /api/papers/{id}` and the ranking `POST /api/ranking` are implemented. The ranking receives an empty JSON object, sorts the same frequency list of the 20 abstracts with Counting, Radix and Bucket, checks that the three complete lists match and returns the top 15 and the time of each method. The explanations are in [ranking report](docs/Ranking%20de%20T%C3%A9rminos%20Mediante%20Algoritmos%20de%20Ordenamiento%20no%20Comparativos.docx). `POST /api/similarity` compares 2–20 distinct papers using Levenshtein, longest common subsequence (LCS), TF-IDF cosine and Jaccard. It accepts `paperIds` and `methods`, returns every selected pair in manifest order and preserves the requested method order. TF-IDF is fitted once over all twenty abstracts. Each result includes its score, explanatory data and kernel computation time. `gemini-embeddings` compares pre-generated Gemini Embedding 2 vectors using explicit Java cosine in [-1,1]. Results identify the model configuration and dimension, with cosine-only timings; `embeddingRuns` reports the configuration and original input token counts for the selected papers in manifest order. Requests never call the provider. `local-embeddings` does the same with pre-generated vectors from `intfloat/multilingual-e5-small`. Without a valid vector file, the requested embedding method returns HTTP 503 `PROVIDER_UNAVAILABLE`. No partial results are returned. Clustering and search are not implemented, and the corpus is not downloaded.
 
 ### Gemini vector generation
 
@@ -64,6 +64,30 @@ Keep the generated file outside the repository and image. Mount it read-only whe
 ```
 
 `GEMINI_EMBEDDINGS` is empty by default. The server loads the file once at startup, trusting its curated content (one record per corpus paper, in corpus order) as it does with the corpus file. An unreadable file leaves Gemini unavailable without blocking classical methods. Restart after replacing either file; regenerate vectors whenever the corpus or embedding configuration changes. The API key is not needed by the HTTP server.
+
+### Local vector generation
+
+`LocalEmbeddingGenerator` is a standalone command, separate from the HTTP server. It uses `intfloat/multilingual-e5-small` at revision `614241f622f53c4eeff9890bdc4f31cfecc418b3` (MIT license, 384 dimensions, 512 token limit), run with ONNX Runtime and the model's own tokenizer. Each complete NFC abstract is prefixed with `query: `, tokenized without truncation (more than 512 tokens including special tokens stops the command), then token states are mean-pooled over the attention mask and L2-normalized. It needs no network once the model files are available: `model.onnx` and `tokenizer.json` from the model repository.
+
+```sh
+docker run --rm --user "$(id -u):$(id -g)" --network none --entrypoint java \
+  --mount "type=bind,src=$CORPUS_FILE,dst=/data/corpus.json,readonly" \
+  --mount "type=bind,src=$MODEL_DIRECTORY,dst=/model,readonly" \
+  --mount "type=bind,src=$VECTOR_DIRECTORY,dst=/vectors" \
+  neguentropia-backend \
+  -Dloader.main=com.neguentropia.similarity.LocalEmbeddingGenerator \
+  -cp /app/application.jar org.springframework.boot.loader.launch.PropertiesLauncher \
+  /data/corpus.json /model/model.onnx /model/tokenizer.json /vectors/local.json
+```
+
+Mount the generated file read-only when starting the server, adding these options before the image name:
+
+```sh
+-e LOCAL_EMBEDDINGS=/vectors/local.json \
+--mount "type=bind,src=$VECTOR_DIRECTORY/local.json,dst=/vectors/local.json,readonly"
+```
+
+`LOCAL_EMBEDDINGS` is empty by default and is loaded like the Gemini file; the generator guarantees inputs of at most 512 tokens. Requests never run the model.
 
 ## External corpus and local preparation
 
