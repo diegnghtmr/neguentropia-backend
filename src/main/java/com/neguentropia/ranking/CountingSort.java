@@ -5,15 +5,20 @@ import java.util.Arrays;
 import java.util.List;
 
 public final class CountingSort {
-    private CountingSort() {}
+    private CountingSort() {
+    }
 
     public static List<TermFrequency> sortDescending(List<TermFrequency> entries) {
         long maxFrequency = 0;
         for (TermFrequency entry : entries) {
-            if (entry.frequency() > maxFrequency) maxFrequency = entry.frequency();
+            if (entry.frequency() > maxFrequency) {
+                maxFrequency = entry.frequency();
+            }
         }
         int[] positions = new int[(int) maxFrequency + 1];
-        for (TermFrequency entry : entries) positions[(int) entry.frequency()]++;
+        for (TermFrequency entry : entries) {
+            positions[(int) entry.frequency()]++;
+        }
         for (int frequency = (int) maxFrequency - 1; frequency >= 0; frequency--) {
             positions[frequency] += positions[frequency + 1];
         }

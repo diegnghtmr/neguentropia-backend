@@ -16,11 +16,15 @@ public class RankingController {
             new ApiError("INVALID_INPUT", "Request body must be an empty JSON object.");
     private final RankingService ranking;
 
-    public RankingController(RankingService ranking) { this.ranking = ranking; }
+    public RankingController(RankingService ranking) {
+        this.ranking = ranking;
+    }
 
     @PostMapping("/api/ranking")
     public ResponseEntity<Object> rank(@RequestBody(required = false) JsonNode body) {
-        if (body == null || !body.isObject() || !body.isEmpty()) return ResponseEntity.badRequest().body(INVALID_INPUT);
+        if (body == null || !body.isObject() || !body.isEmpty()) {
+            return ResponseEntity.badRequest().body(INVALID_INPUT);
+        }
         if (!ranking.ready()) {
             return ResponseEntity.status(503).body(new ApiError("CORPUS_UNAVAILABLE", "Corpus is unavailable."));
         }
@@ -28,10 +32,12 @@ public class RankingController {
     }
 
     @ExceptionHandler({HttpMessageNotReadableException.class, HttpMediaTypeNotSupportedException.class})
-    ResponseEntity<ApiError> invalidInput() { return ResponseEntity.badRequest().body(INVALID_INPUT); }
+    public ResponseEntity<ApiError> invalidInput() {
+        return ResponseEntity.badRequest().body(INVALID_INPUT);
+    }
 
     @ExceptionHandler(IllegalStateException.class)
-    ResponseEntity<ApiError> internalError() {
+    public ResponseEntity<ApiError> internalError() {
         return ResponseEntity.status(500).body(new ApiError("INTERNAL_ERROR", "Ranking could not be completed."));
     }
 }

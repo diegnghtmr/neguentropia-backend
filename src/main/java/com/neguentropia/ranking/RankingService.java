@@ -9,16 +9,20 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class RankingService {
-    static final int TOP = 15;
+    public static final int TOP = 15;
     private static final Preprocessing PREPROCESSING = new Preprocessing(TextPreparation.VERSION, "NFC",
             "Locale.ROOT-lowercase", "unicode-letter-mark-digit-runs-with-letter", false, false, "manifest",
             "first-occurrence");
 
     private final CorpusService corpus;
 
-    public RankingService(CorpusService corpus) { this.corpus = corpus; }
+    public RankingService(CorpusService corpus) {
+        this.corpus = corpus;
+    }
 
-    public boolean ready() { return corpus.ready(); }
+    public boolean ready() {
+        return corpus.ready();
+    }
 
     public RankingResponse rank() {
         List<TermFrequency> input = termFrequencies(corpus.frequencies());
@@ -26,7 +30,9 @@ public class RankingService {
         long maxFrequency = 0;
         for (TermFrequency entry : input) {
             totalTokens += entry.frequency();
-            if (entry.frequency() > maxFrequency) maxFrequency = entry.frequency();
+            if (entry.frequency() > maxFrequency) {
+                maxFrequency = entry.frequency();
+            }
         }
         int bucketCount = BucketSort.bucketCount(input.size());
         long bucketWidth = BucketSort.bucketWidth(maxFrequency, bucketCount);
@@ -43,7 +49,9 @@ public class RankingService {
         start = System.nanoTime();
         List<TermFrequency> radix = RadixSort.sortDescending(radixInput);
         elapsed = System.nanoTime() - start;
-        if (!reference.equals(radix)) throw new IllegalStateException("radix-sort disagrees");
+        if (!reference.equals(radix)) {
+            throw new IllegalStateException("radix-sort disagrees");
+        }
         results.add(new RankingResult("radix-sort", radix.subList(0, Math.min(TOP, radix.size())),
                 elapsed / 1_000_000.0));
 
@@ -51,7 +59,9 @@ public class RankingService {
         start = System.nanoTime();
         List<TermFrequency> bucket = BucketSort.sortDescending(bucketInput);
         elapsed = System.nanoTime() - start;
-        if (!reference.equals(bucket)) throw new IllegalStateException("bucket-sort disagrees");
+        if (!reference.equals(bucket)) {
+            throw new IllegalStateException("bucket-sort disagrees");
+        }
         results.add(new RankingResult("bucket-sort", bucket.subList(0, Math.min(TOP, bucket.size())),
                 elapsed / 1_000_000.0));
         return new RankingResponse(PREPROCESSING, "all-20-abstracts", corpus.paperCount(),

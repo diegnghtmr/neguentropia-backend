@@ -9,7 +9,8 @@ import java.util.Map;
 
 public final class TextPreparation {
     public static final String VERSION = "unicode-nfc-root-v1";
-    private TextPreparation() {}
+    private TextPreparation() {
+    }
 
     public static String baseText(String original) {
         return Normalizer.normalize(original, Normalizer.Form.NFC);
@@ -31,12 +32,16 @@ public final class TextPreparation {
                 run.appendCodePoint(codePoint);
                 hasLetter |= letter;
             } else {
-                if (hasLetter) tokens.add(run.toString());
+                if (hasLetter) {
+                    tokens.add(run.toString());
+                }
                 run.setLength(0);
                 hasLetter = false;
             }
         }
-        if (hasLetter) tokens.add(run.toString());
+        if (hasLetter) {
+            tokens.add(run.toString());
+        }
         return tokens;
     }
 
@@ -45,8 +50,11 @@ public final class TextPreparation {
         for (CorpusLoader.Paper paper : papers) {
             for (String token : tokens(paper.originalAbstract())) {
                 Long count = frequencies.get(token);
-                if (count == null) frequencies.put(token, 1L);
-                else frequencies.put(token, count + 1L);
+                if (count == null) {
+                    frequencies.put(token, 1L);
+                } else {
+                    frequencies.put(token, count + 1L);
+                }
             }
         }
         return frequencies;

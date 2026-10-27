@@ -13,17 +13,17 @@ import org.springframework.test.context.DynamicPropertySource;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class InvalidCorpusEndpointTest {
-    @LocalServerPort int port;
+public class InvalidCorpusEndpointTest {
+    @LocalServerPort public int port;
 
-    @DynamicPropertySource static void configure(DynamicPropertyRegistry registry) throws Exception {
+    @DynamicPropertySource public static void configure(DynamicPropertyRegistry registry) throws Exception {
         var directory = Files.createTempDirectory("synthetic-missing-corpus-");
         var file = directory.resolve("nonexistent-manifest.json");
         registry.add("corpus.manifest", file::toString);
         registry.add("corpus.allowed-origins", () -> "");
     }
 
-    @Test void missingManifestReturnsUnavailableWithoutLeakingPrivateData() throws Exception {
+    @Test public void missingManifestReturnsUnavailableWithoutLeakingPrivateData() throws Exception {
         try (var client = HttpClient.newHttpClient()) {
             for (String path : new String[]{"/api/papers", "/api/papers/paper-01", "/api/papers/not-in-manifest"}) {
                 var response = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).build(),

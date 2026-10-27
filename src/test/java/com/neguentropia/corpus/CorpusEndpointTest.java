@@ -15,10 +15,10 @@ import org.springframework.test.context.DynamicPropertySource;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class CorpusEndpointTest {
-    @LocalServerPort int port;
+public class CorpusEndpointTest {
+    @LocalServerPort public int port;
 
-    @DynamicPropertySource static void configure(DynamicPropertyRegistry registry) throws Exception {
+    @DynamicPropertySource public static void configure(DynamicPropertyRegistry registry) throws Exception {
         var directory = Files.createTempDirectory("synthetic-corpus-http-");
         var manifest = SyntheticManifest.write(directory, SyntheticManifest.create());
         registry.add("corpus.manifest", manifest::toString);
@@ -28,12 +28,16 @@ class CorpusEndpointTest {
     private HttpResponse<String> get(String path, String origin, boolean preflight) throws Exception {
         try (var client = HttpClient.newHttpClient()) {
             var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path));
-            if (origin != null) request.header("Origin", origin);
-            if (preflight) request.header("Access-Control-Request-Method", "GET").method("OPTIONS", HttpRequest.BodyPublishers.noBody());
+            if (origin != null) {
+                request.header("Origin", origin);
+            }
+            if (preflight) {
+                request.header("Access-Control-Request-Method", "GET").method("OPTIONS", HttpRequest.BodyPublishers.noBody());
+            }
             return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
         }
     }
-    @Test void catalogHasExactlyTwentySummaries() throws Exception {
+    @Test public void catalogHasExactlyTwentySummaries() throws Exception {
         var response = get("/api/papers", null, false);
         assertEquals(200, response.statusCode());
         var json = SyntheticManifest.JSON.readTree(response.body());
@@ -46,7 +50,7 @@ class CorpusEndpointTest {
         assertFalse(response.body().contains("sourceFile"));
         assertFalse(response.body().contains("originalAbstract"));
     }
-    @Test void detailPreservesExactUnicodeAndOnlyPublicFields() throws Exception {
+    @Test public void detailPreservesExactUnicodeAndOnlyPublicFields() throws Exception {
         var response = get("/api/papers/paper-01", null, false);
         assertEquals(200, response.statusCode());
         var json = SyntheticManifest.JSON.readTree(response.body());
@@ -56,18 +60,18 @@ class CorpusEndpointTest {
         assertFalse(response.body().contains("source"));
         assertFalse(response.body().contains("review"));
     }
-    @Test void unknownIdIsSanitized404() throws Exception {
+    @Test public void unknownIdIsSanitized404() throws Exception {
         var response = get("/api/papers/private-nonexistent.pdf", null, false);
         assertEquals(404, response.statusCode());
         assertEquals("PAPER_NOT_FOUND", SyntheticManifest.JSON.readTree(response.body()).path("code").asText());
         assertFalse(response.body().contains("private-nonexistent"));
     }
-    @Test void healthReportsReadyWithoutChangingLiveness() throws Exception {
+    @Test public void healthReportsReadyWithoutChangingLiveness() throws Exception {
         var response = get("/api/health", null, false);
         assertEquals(200, response.statusCode());
         assertEquals("{\"status\":\"up\",\"corpusState\":\"ready\"}", response.body());
     }
-    @Test void explicitlyAllowedOriginSupportsGetAndPreflightWithoutCredentials() throws Exception {
+    @Test public void explicitlyAllowedOriginSupportsGetAndPreflightWithoutCredentials() throws Exception {
         for (boolean preflight : List.of(false, true)) {
             var response = get("/api/papers", "http://127.0.0.1:4174", preflight);
             assertEquals(200, response.statusCode());
@@ -75,7 +79,7 @@ class CorpusEndpointTest {
             assertTrue(response.headers().firstValue("Access-Control-Allow-Credentials").isEmpty());
         }
     }
-    @Test void undeclaredOriginIsRejectedNotReflected() throws Exception {
+    @Test public void undeclaredOriginIsRejectedNotReflected() throws Exception {
         for (String origin : List.of("http://localhost:4174", "https://evil.invalid", "null")) {
             var response = get("/api/papers", origin, true);
             assertEquals(403, response.statusCode());

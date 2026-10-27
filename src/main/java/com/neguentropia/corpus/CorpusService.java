@@ -15,15 +15,32 @@ public class CorpusService {
     public CorpusService(JsonMapper mapper, @Value("${corpus.manifest:}") String configured) {
         List<CorpusLoader.Paper> loaded = null;
         if (!configured.isBlank()) {
-            try { loaded = new CorpusLoader(mapper).load(Path.of(configured)); }
-            catch (Exception ignored) { loaded = null; }
+            try {
+                loaded = new CorpusLoader(mapper).load(Path.of(configured));
+            } catch (Exception ignored) {
+            }
         }
         papers = loaded;
-        frequencies = loaded == null ? Map.of() : TextPreparation.frequencies(loaded);
+        if (loaded == null) {
+            frequencies = Map.of();
+        } else {
+            frequencies = TextPreparation.frequencies(loaded);
+        }
     }
 
-    public boolean ready() { return papers != null; }
-    List<CorpusLoader.Paper> papers() { return papers; }
-    public int paperCount() { return papers == null ? 0 : papers.size(); }
-    public Map<String, Long> frequencies() { return frequencies; }
+    public boolean ready() {
+        return papers != null;
+    }
+    public List<CorpusLoader.Paper> papers() {
+        return papers;
+    }
+    public int paperCount() {
+        if (papers == null) {
+            return 0;
+        }
+        return papers.size();
+    }
+    public Map<String, Long> frequencies() {
+        return frequencies;
+    }
 }

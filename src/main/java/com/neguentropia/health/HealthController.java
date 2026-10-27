@@ -8,11 +8,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class HealthController {
     private final CorpusService corpus;
 
-    public HealthController(CorpusService corpus) { this.corpus = corpus; }
+    public HealthController(CorpusService corpus) {
+        this.corpus = corpus;
+    }
 
     @GetMapping("/api/health")
     public HealthResponse health() {
-        return new HealthResponse("up", corpus.ready() ? "ready" : "unavailable");
+        if (corpus.ready()) {
+            return new HealthResponse("up", "ready");
+        }
+        return new HealthResponse("up", "unavailable");
     }
 
     public record HealthResponse(String status, String corpusState) {}

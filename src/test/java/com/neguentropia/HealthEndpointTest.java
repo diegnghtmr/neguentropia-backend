@@ -15,12 +15,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"corpus.manifest=", "corpus.allowed-origins="})
-class HealthEndpointTest {
+public class HealthEndpointTest {
     @LocalServerPort
     private int port;
 
     @Test
-    void unavailableCorpusReturnsSanitized503AndCorsIsClosedByDefault() throws Exception {
+    public void unavailableCorpusReturnsSanitized503AndCorsIsClosedByDefault() throws Exception {
         try (var client = HttpClient.newHttpClient()) {
             for (String path : new String[]{"/api/papers", "/api/papers/paper-01"}) {
                 var response = client.send(HttpRequest.newBuilder()
@@ -41,7 +41,7 @@ class HealthEndpointTest {
     }
 
     @Test
-    void reportsProcessUpWithoutClaimingCorpusReadiness() throws Exception {
+    public void reportsProcessUpWithoutClaimingCorpusReadiness() throws Exception {
         try (var client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .build()) {

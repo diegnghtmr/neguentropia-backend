@@ -7,11 +7,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
 
-class CorpusLoaderTest {
-    @TempDir Path directory;
+public class CorpusLoaderTest {
+    @TempDir public Path directory;
     private final CorpusLoader loader = new CorpusLoader(SyntheticManifest.JSON);
 
-    @Test void mapsAllTwentyPapersAndNeverReadsSourceFiles() throws Exception {
+    @Test public void mapsAllTwentyPapersAndNeverReadsSourceFiles() throws Exception {
         Map<String, Object> input = SyntheticManifest.create();
         List<CorpusLoader.Paper> papers = loader.load(SyntheticManifest.write(directory, input));
         assertEquals(20, papers.size());

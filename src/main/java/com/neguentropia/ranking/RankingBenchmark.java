@@ -12,7 +12,8 @@ public final class RankingBenchmark {
     private static final int WARMUPS = 20;
     private static final int MEASUREMENTS = 100;
 
-    private RankingBenchmark() {}
+    private RankingBenchmark() {
+    }
 
     public static void main(String[] args) {
         try {
@@ -68,9 +69,14 @@ public final class RankingBenchmark {
                 } else {
                     throw new IllegalArgumentException("Unknown method");
                 }
-                if (reference == null) reference = result;
-                else if (!reference.equals(result)) throw new IllegalStateException("Sort disagreement");
-                if (run >= 0) durations[run] = elapsed / 1_000_000.0;
+                if (reference == null) {
+                    reference = result;
+                } else if (!reference.equals(result)) {
+                    throw new IllegalStateException("Sort disagreement");
+                }
+                if (run >= 0) {
+                    durations[run] = elapsed / 1_000_000.0;
+                }
             }
             Statistics statistics = statistics(durations);
             System.out.println("stats method=" + method + " median_ms=" + statistics.median()
@@ -87,15 +93,18 @@ public final class RankingBenchmark {
         System.out.println("complete_outputs_equal=true");
     }
 
-    record Statistics(double median, double min, double max) {}
+    public record Statistics(double median, double min, double max) {}
 
-    static Statistics statistics(double[] durations) {
+    public static Statistics statistics(double[] durations) {
         double[] sorted = durations.clone();
         Arrays.sort(sorted);
         int middle = sorted.length / 2;
         double median;
-        if (sorted.length % 2 == 0) median = (sorted[middle - 1] + sorted[middle]) / 2;
-        else median = sorted[middle];
+        if (sorted.length % 2 == 0) {
+            median = (sorted[middle - 1] + sorted[middle]) / 2;
+        } else {
+            median = sorted[middle];
+        }
         return new Statistics(median, sorted[0], sorted[sorted.length - 1]);
     }
 }

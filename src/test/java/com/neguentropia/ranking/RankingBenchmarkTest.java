@@ -3,9 +3,9 @@ package com.neguentropia.ranking;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-class RankingBenchmarkTest {
+public class RankingBenchmarkTest {
     @Test
-    void statisticsUseSortedCopyAndArithmeticMedian() {
+    public void statisticsUseSortedCopyAndArithmeticMedian() {
         double[] durations = {9, 1, 5, 3};
         assertEquals(new RankingBenchmark.Statistics(4, 1, 9), RankingBenchmark.statistics(durations));
         assertArrayEquals(new double[]{9, 1, 5, 3}, durations);

@@ -20,11 +20,13 @@ public class CorpusCorsConfiguration implements WebMvcConfigurer {
                 .allowedMethods("GET", "POST").allowCredentials(false);
     }
 
-    static List<String> allowedOrigins(String configured) {
+    public static List<String> allowedOrigins(String configured) {
         ArrayList<String> origins = new ArrayList<>();
         for (String value : configured.split(",")) {
             String origin = value.strip();
-            if (!origin.isEmpty()) origins.add(origin);
+            if (!origin.isEmpty()) {
+                origins.add(origin);
+            }
         }
         return origins;
     }

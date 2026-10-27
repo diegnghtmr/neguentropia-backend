@@ -8,10 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
 
-class CorpusServiceTest {
-    @TempDir Path directory;
+public class CorpusServiceTest {
+    @TempDir public Path directory;
 
-    @Test void missingAndEmptyConfigurationAreUnavailable() {
+    @Test public void missingAndEmptyConfigurationAreUnavailable() {
         for (String configured : new String[]{"", "  ", directory.resolve("private-missing.json").toString()}) {
             CorpusService service = new CorpusService(SyntheticManifest.JSON, configured);
             assertFalse(service.ready());
@@ -20,7 +20,7 @@ class CorpusServiceTest {
             assertTrue(service.frequencies().isEmpty());
         }
     }
-    @Test void loadsOnceAndKeepsSnapshotInRam() throws Exception {
+    @Test public void loadsOnceAndKeepsSnapshotInRam() throws Exception {
         Path file = SyntheticManifest.write(directory, SyntheticManifest.create());
         CorpusService service = new CorpusService(SyntheticManifest.JSON, file.toString());
         assertTrue(service.ready());

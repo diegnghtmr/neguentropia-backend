@@ -10,7 +10,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 public final class SyntheticManifest {
     public static final JsonMapper JSON = JsonMapper.builder().build();
-    private SyntheticManifest() {}
+    private SyntheticManifest() {
+    }
 
     public static Map<String, Object> create() {
         ArrayList<Map<String, Object>> papers = new ArrayList<>();

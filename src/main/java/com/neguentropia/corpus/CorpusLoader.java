@@ -19,7 +19,9 @@ public final class CorpusLoader {
         ArrayList<Paper> papers = new ArrayList<>();
         for (JsonNode record : root.get("papers")) {
             ArrayList<String> authors = new ArrayList<>();
-            for (JsonNode author : record.get("authors")) authors.add(author.stringValue());
+            for (JsonNode author : record.get("authors")) {
+                authors.add(author.stringValue());
+            }
             papers.add(new Paper(record.get("id").stringValue(), record.get("title").stringValue(), authors,
                     record.get("originalAbstract").stringValue(), record.get("sourceFile").stringValue()));
         }

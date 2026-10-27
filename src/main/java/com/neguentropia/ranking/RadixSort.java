@@ -7,7 +7,8 @@ import java.util.List;
 public final class RadixSort {
     public static final int BASE = 10;
 
-    private RadixSort() {}
+    private RadixSort() {
+    }
 
     public static List<TermFrequency> sortDescending(List<TermFrequency> entries) {
         TermFrequency[] current = new TermFrequency[entries.size()];
@@ -15,7 +16,9 @@ public final class RadixSort {
         for (int i = 0; i < entries.size(); i++) {
             TermFrequency entry = entries.get(i);
             current[i] = entry;
-            if (entry.frequency() > maxFrequency) maxFrequency = entry.frequency();
+            if (entry.frequency() > maxFrequency) {
+                maxFrequency = entry.frequency();
+            }
         }
         int passes = passCount(maxFrequency);
         long exponent = 1;
@@ -35,7 +38,7 @@ public final class RadixSort {
         return passes;
     }
 
-    static TermFrequency[] sortDigit(TermFrequency[] current, long exponent) {
+    public static TermFrequency[] sortDigit(TermFrequency[] current, long exponent) {
         int[] counts = new int[BASE];
         for (TermFrequency entry : current) {
             int digit = (int) ((entry.frequency() / exponent) % BASE);

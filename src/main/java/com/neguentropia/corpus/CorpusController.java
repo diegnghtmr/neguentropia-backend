@@ -13,11 +13,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class CorpusController {
     private final CorpusService corpus;
 
-    public CorpusController(CorpusService corpus) { this.corpus = corpus; }
+    public CorpusController(CorpusService corpus) {
+        this.corpus = corpus;
+    }
 
     @GetMapping
     public ResponseEntity<Object> catalog() {
-        if (!corpus.ready()) return unavailable();
+        if (!corpus.ready()) {
+            return unavailable();
+        }
         ArrayList<PaperSummary> summaries = new ArrayList<>();
         for (CorpusLoader.Paper paper : corpus.papers()) {
             summaries.add(new PaperSummary(paper.id(), paper.title(), paper.authors()));
@@ -27,10 +31,14 @@ public class CorpusController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Object> detail(@PathVariable String id) {
-        if (!corpus.ready()) return unavailable();
+        if (!corpus.ready()) {
+            return unavailable();
+        }
         for (CorpusLoader.Paper paper : corpus.papers()) {
-            if (paper.id().equals(id)) return ResponseEntity.ok(new PaperDetail(paper.id(), paper.title(),
-                    paper.authors(), paper.originalAbstract()));
+            if (paper.id().equals(id)) {
+                return ResponseEntity.ok(new PaperDetail(paper.id(), paper.title(),
+                        paper.authors(), paper.originalAbstract()));
+            }
         }
         return ResponseEntity.status(404).body(new ApiError("PAPER_NOT_FOUND", "Paper was not found."));
     }

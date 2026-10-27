@@ -17,10 +17,10 @@ import tools.jackson.databind.JsonNode;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class RankingEndpointTest {
-    @LocalServerPort int port;
+public class RankingEndpointTest {
+    @LocalServerPort public int port;
 
-    @DynamicPropertySource static void configure(DynamicPropertyRegistry registry) throws Exception {
+    @DynamicPropertySource public static void configure(DynamicPropertyRegistry registry) throws Exception {
         var directory = Files.createTempDirectory("synthetic-corpus-ranking-");
         var manifest = SyntheticManifest.write(directory, SyntheticManifest.create());
         registry.add("corpus.manifest", manifest::toString);
@@ -29,20 +29,27 @@ class RankingEndpointTest {
 
     private HttpResponse<String> post(String body, String contentType) throws Exception {
         try (var client = HttpClient.newHttpClient()) {
-            var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/ranking"))
-                    .POST(body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body));
-            if (contentType != null) request.header("Content-Type", contentType);
+            var publisher = HttpRequest.BodyPublishers.noBody();
+            if (body != null) {
+                publisher = HttpRequest.BodyPublishers.ofString(body);
+            }
+            var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/ranking")).POST(publisher);
+            if (contentType != null) {
+                request.header("Content-Type", contentType);
+            }
             return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
         }
     }
 
     private static List<String> terms(JsonNode topTerms) {
         var terms = new ArrayList<String>();
-        for (var term : topTerms) terms.add(term.path("term").asText() + ":" + term.path("frequency").asLong());
+        for (var term : topTerms) {
+            terms.add(term.path("term").asText() + ":" + term.path("frequency").asLong());
+        }
         return terms;
     }
 
-    @Test void ranksTheTwentyAbstractsWithThreeIdenticalStableResults() throws Exception {
+    @Test public void ranksTheTwentyAbstractsWithThreeIdenticalStableResults() throws Exception {
         var response = post("{}", "application/json");
         assertEquals(200, response.statusCode());
         var json = SyntheticManifest.JSON.readTree(response.body());
@@ -70,7 +77,9 @@ class RankingEndpointTest {
         assertEquals(11, parameters.path("bucketWidth").asLong());
 
         var expected = new ArrayList<>(List.of("árbol:40", "ia2:20"));
-        for (int i = 1; i <= 13; i++) expected.add("synthetic" + i + ":1");
+        for (int i = 1; i <= 13; i++) {
+            expected.add("synthetic" + i + ":1");
+        }
         var results = json.path("results");
         assertEquals(3, results.size());
         var methods = List.of("counting-sort", "radix-sort", "bucket-sort");
@@ -84,7 +93,7 @@ class RankingEndpointTest {
         }
         assertEquals(8, json.size());
     }
-    @Test void rejectsAnythingButAnEmptyJsonObject() throws Exception {
+    @Test public void rejectsAnythingButAnEmptyJsonObject() throws Exception {
         for (String body : new String[]{"{\"scope\":\"all\"}", "[]", "null", "{", ""}) {
             var response = post(body, "application/json");
             assertEquals(400, response.statusCode(), body);
@@ -95,7 +104,7 @@ class RankingEndpointTest {
         assertEquals(400, noBody.statusCode());
         assertEquals("INVALID_INPUT", SyntheticManifest.JSON.readTree(noBody.body()).path("code").asText());
     }
-    @Test void allowedOriginCanPreflightAndPostWithoutCredentials() throws Exception {
+    @Test public void allowedOriginCanPreflightAndPostWithoutCredentials() throws Exception {
         try (var client = HttpClient.newHttpClient()) {
             var preflight = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/ranking"))
                     .method("OPTIONS", HttpRequest.BodyPublishers.noBody())

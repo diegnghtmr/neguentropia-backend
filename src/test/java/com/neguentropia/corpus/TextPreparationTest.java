@@ -8,27 +8,29 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
 
-class TextPreparationTest {
-    @TempDir Path directory;
+public class TextPreparationTest {
+    @TempDir public Path directory;
 
-    @Test void followsLiteralTokenContract() {
+    @Test public void followsLiteralTokenContract() {
         assertEquals(List.of("árbol", "árbol", "ia2"), TextPreparation.tokens("Árbol, árbol 123 IA2"));
     }
-    @Test void keepsOriginalSpacingAndNormalizesOnlyDerivedBase() {
+    @Test public void keepsOriginalSpacingAndNormalizesOnlyDerivedBase() {
         assertEquals("  Árbol\n", TextPreparation.baseText("  A\u0301rbol\n"));
     }
-    @Test void handlesUnicodeMarksDigitsAndSupplementaryLettersWithoutJoiningPunctuation() {
+    @Test public void handlesUnicodeMarksDigitsAndSupplementaryLettersWithoutJoiningPunctuation() {
         assertEquals(List.of("é", "a٢", "𐐨", "the", "and", "running"),
                 TextPreparation.tokens("e\u0301 a٢ 𐐀 the-and running 123 \u0301"));
     }
-    @Test void lowercaseDoesNotDependOnMachineLocale() {
+    @Test public void lowercaseDoesNotDependOnMachineLocale() {
         var previous = Locale.getDefault();
         try {
             Locale.setDefault(Locale.forLanguageTag("tr"));
             assertEquals(List.of("ia2", "i\u0307"), TextPreparation.tokens("IA2 İ"));
-        } finally { Locale.setDefault(previous); }
+        } finally {
+            Locale.setDefault(previous);
+        }
     }
-    @Test void countsOnlyAbstractsInFirstAppearanceOrderReproducibly() throws Exception {
+    @Test public void countsOnlyAbstractsInFirstAppearanceOrderReproducibly() throws Exception {
         List<CorpusLoader.Paper> papers = new CorpusLoader(SyntheticManifest.JSON).load(
                 SyntheticManifest.write(directory, SyntheticManifest.create()));
         var first = TextPreparation.frequencies(papers);

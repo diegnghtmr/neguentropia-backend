@@ -7,12 +7,12 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-class RadixSortTest {
+public class RadixSortTest {
     private static TermFrequency tf(String term, long frequency) {
         return new TermFrequency(term, frequency);
     }
 
-    @Test void tracesBothPassesOfTheWorkedExample() {
+    @Test public void tracesBothPassesOfTheWorkedExample() {
         var input = List.of(tf("a", 12), tf("b", 3), tf("c", 12), tf("d", 21), tf("e", 3), tf("f", 8));
         var units = RadixSort.sortDigit(input.toArray(TermFrequency[]::new), 1);
         assertEquals(List.of(input.get(5), input.get(1), input.get(4), input.get(0), input.get(2), input.get(3)),
@@ -22,7 +22,7 @@ class RadixSortTest {
         assertEquals(expected, RadixSort.sortDescending(input));
     }
 
-    @Test void tiesKeepInputOrderRatherThanAlphabeticalOrder() {
+    @Test public void tiesKeepInputOrderRatherThanAlphabeticalOrder() {
         var x = tf("x", 10);
         var y = tf("y", 2);
         var z = tf("z", 10);
@@ -32,12 +32,12 @@ class RadixSortTest {
         assertEquals(List.of(first, second), RadixSort.sortDescending(List.of(first, second)));
     }
 
-    @Test void allEqualFrequenciesKeepEveryRecordInOrder() {
+    @Test public void allEqualFrequenciesKeepEveryRecordInOrder() {
         var input = List.of(tf("z", 111), tf("a", 111), tf("m", 111));
         assertEquals(input, RadixSort.sortDescending(input));
     }
 
-    @Test void countsDecimalPassesForOrdinaryFrequencies() {
+    @Test public void countsDecimalPassesForOrdinaryFrequencies() {
         assertEquals(10, RadixSort.BASE);
         assertEquals(1, RadixSort.passCount(1));
         assertEquals(1, RadixSort.passCount(9));
@@ -47,7 +47,7 @@ class RadixSortTest {
         assertEquals(3, RadixSort.passCount(221));
     }
 
-    @Test void doesNotMutateInput() {
+    @Test public void doesNotMutateInput() {
         var low = tf("low", 2);
         var high = tf("high", 11);
         var input = new ArrayList<>(List.of(low, high));
@@ -56,12 +56,16 @@ class RadixSortTest {
         assertEquals(List.of(high, low), output);
     }
 
-    @Test void outputIsARecordPermutationWithDescendingStableFrequencies() {
+    @Test public void outputIsARecordPermutationWithDescendingStableFrequencies() {
         var input = new ArrayList<TermFrequency>();
-        for (int i = 0; i < 200; i++) input.add(tf("term-" + i, 1 + (i * 37L) % 103));
+        for (int i = 0; i < 200; i++) {
+            input.add(tf("term-" + i, 1 + (i * 37L) % 103));
+        }
         var output = RadixSort.sortDescending(input);
         var occurrences = new HashMap<TermFrequency, Integer>();
-        for (var entry : input) occurrences.merge(entry, 1, Integer::sum);
+        for (var entry : input) {
+            occurrences.merge(entry, 1, Integer::sum);
+        }
         assertEquals(input.size(), output.size());
         for (var entry : output) {
             assertNotNull(occurrences.remove(entry), "Each full record must occur exactly once");
