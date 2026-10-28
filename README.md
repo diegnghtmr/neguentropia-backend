@@ -25,9 +25,21 @@ docker run --rm --name neguentropia-backend \
   -p 127.0.0.1:8080:8080 -e PORT=8080 neguentropia-backend
 ```
 
-The build runs the tests and produces the JAR inside the container. The final stage contains the JRE and the JAR, without Gradle or sources, and runs Java with the unprivileged UID/GID `10001:10001`. Both base images are pinned by digest.
+The build runs the tests and produces the JAR inside the container. The final stage contains the JRE, the JAR and the `data/` directory, without Gradle or sources, and runs Java with the unprivileged UID/GID `10001:10001`. Both base images are pinned by digest.
 
 The application listens on `0.0.0.0` inside the container. `PORT` changes the internal port and defaults to `8080`; the `-p` mapping must match. Local publishing is limited to the host's loopback interface.
+
+## Data
+
+`data/` holds everything the server needs to run:
+
+| File | Content |
+| --- | --- |
+| `data/corpus.json` | The 20 papers: `id`, `title`, `authors`, `originalAbstract` and `sourceFile`. |
+| `data/gemini.json` | One `gemini-embedding-2` vector per paper (3072 dimensions). |
+| `data/local.json` | One `intfloat/multilingual-e5-small` vector per paper (384 dimensions). |
+
+The image copies `data/` and sets `CORPUS_MANIFEST`, `GEMINI_EMBEDDINGS` and `LOCAL_EMBEDDINGS` to those files, so it starts with the corpus ready and both embedding methods available. Override any of the three variables to use another file. Outside the image the variables are empty by default. The server loads the files once at startup and keeps them in memory; there is no database.
 
 ## Contract and scope
 
@@ -41,48 +53,34 @@ The HTTP contract is defined in an OpenAPI specification maintained outside this
 
 ### Gemini vector generation
 
-`GeminiEmbeddingGenerator` is a standalone command, separate from the HTTP server and from the server jar: it lives in the `generator` source set. With corpus transfer permission and an API budget, generate one private vector file using `GEMINI_API_KEY` exported in the invoking shell. The command reads the key only from the environment, never from a file. Each complete NFC abstract is prefixed with `task: sentence similarity | query: `, counted with the model's `countTokens` endpoint (maximum 8192), then embedded with `gemini-embedding-2` (3072 dimensions). It stops on errors without retries; it never truncates or substitutes a provider.
+`GeminiEmbeddingGenerator` is a standalone command, separate from the HTTP server and from the server jar: it lives in the `generator` source set. It produced `data/gemini.json` and is only needed to regenerate it. It reads `GEMINI_API_KEY` only from the environment, never from a file. Each complete NFC abstract is prefixed with `task: sentence similarity | query: `, counted with the model's `countTokens` endpoint (maximum 8192), then embedded with `gemini-embedding-2` (3072 dimensions). It stops on errors without retries; it never truncates or substitutes a provider.
 
-The vector file is `{"model": "gemini-embedding-2", "papers": [{"id": "paper-01", "values": [...]}, ...]}`, one record per corpus paper in corpus order; the dimension is the length of `values`. Run from this directory with the corpus and a private writable output path:
-
-```sh
-GEMINI_API_KEY=... ./gradlew generateGeminiEmbeddings --args="/path/to/corpus.json /path/to/gemini.json"
-```
-
-Keep the generated file outside the repository and image. Mount it read-only when starting the server, adding these options before the image name in the runtime command:
+The vector file is `{"model": "gemini-embedding-2", "papers": [{"id": "paper-01", "values": [...]}, ...]}`, one record per corpus paper in corpus order; the dimension is the length of `values`. Run from this directory:
 
 ```sh
--e GEMINI_EMBEDDINGS=/vectors/gemini.json \
---mount "type=bind,src=$VECTOR_DIRECTORY/gemini.json,dst=/vectors/gemini.json,readonly"
+GEMINI_API_KEY=... ./gradlew generateGeminiEmbeddings --args="data/corpus.json data/gemini.json"
 ```
 
-`GEMINI_EMBEDDINGS` is empty by default. The server loads the file once at startup, trusting its curated content (one record per corpus paper, in corpus order) as it does with the corpus file. An unreadable file leaves Gemini unavailable without blocking classical methods. Restart after replacing either file; regenerate vectors whenever the corpus or embedding configuration changes. The API key is not needed by the HTTP server.
+The server trusts the file's content (one record per corpus paper, in corpus order) as it does with the corpus file. An unreadable file leaves Gemini unavailable without blocking classical methods. Regenerate the vectors whenever the corpus or embedding configuration changes. The API key is not needed by the HTTP server.
 
 ### Local vector generation
 
-`LocalEmbeddingGenerator` is a standalone command in the `generator` source set, separate from the HTTP server and the server jar (ONNX Runtime and the tokenizer library are generator-only dependencies). It uses `intfloat/multilingual-e5-small` at revision `614241f622f53c4eeff9890bdc4f31cfecc418b3` (MIT license, 384 dimensions, 512 token limit), run with ONNX Runtime and the model's own tokenizer. Each complete NFC abstract is prefixed with `query: `, tokenized without truncation (more than 512 tokens including special tokens stops the command), then token states are mean-pooled over the attention mask and L2-normalized. It needs no network once the model files are available: `model.onnx` and `tokenizer.json` from the model repository. The output uses the same file format as above, with `"model": "intfloat/multilingual-e5-small"`.
+`LocalEmbeddingGenerator` is a standalone command in the `generator` source set, separate from the HTTP server and the server jar (ONNX Runtime and the tokenizer library are generator-only dependencies). It uses `intfloat/multilingual-e5-small` at revision `614241f622f53c4eeff9890bdc4f31cfecc418b3` (MIT license, 384 dimensions, 512 token limit), run with ONNX Runtime and the model's own tokenizer. Each complete NFC abstract is prefixed with `query: `, tokenized without truncation (more than 512 tokens including special tokens stops the command), then token states are mean-pooled over the attention mask and L2-normalized. It produced `data/local.json` and needs no network once the model files are available: `model.onnx` and `tokenizer.json` from the model repository (not included in this repository). The output uses the same file format as above, with `"model": "intfloat/multilingual-e5-small"`.
 
 ```sh
-./gradlew generateLocalEmbeddings --args="/path/to/corpus.json /path/to/model.onnx /path/to/tokenizer.json /path/to/local.json"
+./gradlew generateLocalEmbeddings --args="data/corpus.json /path/to/model.onnx /path/to/tokenizer.json data/local.json"
 ```
 
-Mount the generated file read-only when starting the server, adding these options before the image name:
+The generator guarantees inputs of at most 512 tokens. Requests never run the model.
 
-```sh
--e LOCAL_EMBEDDINGS=/vectors/local.json \
---mount "type=bind,src=$VECTOR_DIRECTORY/local.json,dst=/vectors/local.json,readonly"
-```
-
-`LOCAL_EMBEDDINGS` is empty by default and is loaded like the Gemini file; the generator guarantees inputs of at most 512 tokens. Requests never run the model.
-
-## External corpus and local preparation
+## Configuration and text preparation
 
 | Setting | Behavior |
 | --- | --- |
-| `CORPUS_MANIFEST` | Internal path of the private `corpus.json` file; empty by default. Mount it externally read-only; never copy it into the repository, resources or image. |
+| `CORPUS_MANIFEST` | Path of the `corpus.json` file. The image sets it to `/app/data/corpus.json`; empty by default outside the image. |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated origins applied as configured, for example `http://127.0.0.1:4174`. Whitespace is stripped and empty entries are ignored. Empty by default: CORS stays closed. GET and POST are allowed without credentials. |
 
-The local runtime must use the owner's UID/GID if the file keeps `0600` permissions; do not widen permissions to make it readable. The `sourceFile` paths are provenance references: **they are not opened, resolved or interpreted as input paths**. The application does not read any PDF either, and corpus paths are not accepted over HTTP.
+The `sourceFile` values are provenance references: **they are not opened, resolved or interpreted as input paths**. The application does not read any PDF either, and corpus paths are not accepted over HTTP.
 
 `corpus.json` is a plain JSON document with one `papers` array; each paper has `id`, `title`, `authors`, `originalAbstract` and `sourceFile`:
 
@@ -107,8 +105,8 @@ limitations. `RankingBenchmark` is a standalone offline entry point; it does not
 start the HTTP server. Its arguments are the `corpus.json` path and the
 comma-separated method order, for example `counting,radix,bucket`. It prints
 `source_commit` from the JVM property `-Dbenchmark.sourceCommit` as given,
-without validating it. The corpus file must remain externally mounted read-only.
+without validating it.
 
 ## Repository contents
 
-Version sources, tests, wrapper, build configuration, Dockerfile and technical documentation. Do not version credentials, caches, build outputs or private instructions/notes. `.env.example`, if added, must contain only fictitious values. The data directories `/corpus/` and `/models/` are excluded: usage and publication permissions are checked before any transfer. Ignoring a file does not remove earlier versions or replace the review of staged files.
+Version sources, tests, wrapper, build configuration, Dockerfile, `data/` and technical documentation. Do not version credentials, caches, build outputs, model files or private instructions/notes. `.env.example`, if added, must contain only fictitious values.
