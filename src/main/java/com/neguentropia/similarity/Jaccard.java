@@ -23,12 +23,7 @@ public final class Jaccard {
             }
         }
         int union = leftTerms.size() + rightTerms.size() - intersection;
-        double score;
-        if (union == 0) {
-            score = 1;
-        } else {
-            score = intersection / (double) union;
-        }
+        double score = intersection / (double) union;
         return new Result(intersection, union, score);
     }
 

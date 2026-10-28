@@ -28,8 +28,7 @@ public final class TfIdf {
         }
         double[] idf = new double[vocabulary.size()];
         for (Map.Entry<String, Integer> term : vocabulary.entrySet()) {
-            idf[term.getValue()] = Math.log((documents.size() + 1.0)
-                    / (documentFrequency.get(term.getKey()) + 1.0)) + 1;
+            idf[term.getValue()] = Math.log(documents.size() / (double) documentFrequency.get(term.getKey()));
         }
         double[][] vectors = new double[documents.size()][vocabulary.size()];
         for (int document = 0; document < documents.size(); document++) {
@@ -51,10 +50,6 @@ public final class TfIdf {
             leftSquared += left[i] * left[i];
             rightSquared += right[i] * right[i];
         }
-        double cosine = dot / (Math.sqrt(leftSquared) * Math.sqrt(rightSquared));
-        if (cosine > 1) {
-            return 1;
-        }
-        return cosine;
+        return dot / (Math.sqrt(leftSquared) * Math.sqrt(rightSquared));
     }
 }

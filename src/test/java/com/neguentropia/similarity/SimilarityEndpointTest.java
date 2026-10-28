@@ -76,8 +76,7 @@ public class SimilarityEndpointTest {
                 assertEquals("global-tf-idf", results.get(1).path("representation").asText());
                 assertEquals(20, results.get(1).path("fitPaperCount").asInt());
                 assertEquals(22, results.get(1).path("dimension").asInt());
-                double idf = 1 + Math.log(21.0 / 2);
-                assertEquals(5 / (5 + idf * idf), results.get(1).path("score").asDouble(), 1e-12);
+                assertEquals(0, results.get(1).path("score").asDouble(), 1e-12);
                 assertEquals(7, results.get(2).size());
                 assertEquals("tokens", results.get(2).path("representation").asText());
                 assertEquals(3, results.get(2).path("length").asInt());
@@ -86,10 +85,10 @@ public class SimilarityEndpointTest {
                 assertEquals(4, results.get(2).path("rightTokenCount").asInt());
                 assertEquals(0.75, results.get(2).path("score").asDouble(), 1e-12);
                 assertEquals(6, results.get(3).size());
-                assertEquals("joined-token-code-points", results.get(3).path("representation").asText());
+                assertEquals("joined-tokens", results.get(3).path("representation").asText());
                 assertEquals(1, results.get(3).path("distance").asInt());
-                assertEquals(26, results.get(3).path("leftCodePointLength").asInt());
-                assertEquals(26, results.get(3).path("rightCodePointLength").asInt());
+                assertEquals(26, results.get(3).path("leftLength").asInt());
+                assertEquals(26, results.get(3).path("rightLength").asInt());
                 assertEquals(25.0 / 26, results.get(3).path("score").asDouble(), 1e-12);
             }
         }

@@ -39,12 +39,7 @@ public final class LongestCommonSubsequence {
         }
         int length = matrix[left.size()][right.size()];
         int total = left.size() + right.size();
-        double score;
-        if (total == 0) {
-            score = 1;
-        } else {
-            score = 2.0 * length / total;
-        }
+        double score = 2.0 * length / total;
         return new Result(length, sequence, score);
     }
 

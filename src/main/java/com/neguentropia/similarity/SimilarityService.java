@@ -88,8 +88,8 @@ public class SimilarityService {
             String leftText = joinedTokens.get(left);
             String rightText = joinedTokens.get(right);
             Levenshtein.Result result = Levenshtein.compare(leftText, rightText);
-            return new LevenshteinResult(method, "joined-token-code-points", result.score(), result.distance(),
-                    result.leftCodePointLength(), result.rightCodePointLength());
+            return new LevenshteinResult(method, "joined-tokens", result.score(), result.distance(),
+                    result.leftLength(), result.rightLength());
         }
         if (method.equals("lcs")) {
             List<String> leftTokens = tokens.get(left);
@@ -126,7 +126,7 @@ public class SimilarityService {
     }
 
     public record LevenshteinResult(String method, String representation, double score, int distance,
-                                    int leftCodePointLength, int rightCodePointLength) {}
+                                    int leftLength, int rightLength) {}
     public record LcsResult(String method, String representation, double score, int length, List<String> subsequence,
                             int leftTokenCount, int rightTokenCount) {}
     public record TfIdfResult(String method, String representation, double score, int dimension, int fitPaperCount) {}

@@ -5,32 +5,16 @@ public final class Levenshtein {
     }
 
     public static Result compare(String leftText, String rightText) {
-        int[] left = codePoints(leftText);
-        int[] right = codePoints(rightText);
+        char[] left = leftText.toCharArray();
+        char[] right = rightText.toCharArray();
         int[][] matrix = buildDistanceMatrix(left, right);
         int distance = matrix[left.length][right.length];
         int maximum = Math.max(left.length, right.length);
-        double score;
-        if (maximum == 0) {
-            score = 1;
-        } else {
-            score = 1 - distance / (double) maximum;
-        }
+        double score = 1 - distance / (double) maximum;
         return new Result(distance, left.length, right.length, score);
     }
 
-    private static int[] codePoints(String text) {
-        int[] points = new int[text.codePointCount(0, text.length())];
-        int index = 0;
-        for (int offset = 0; offset < text.length();) {
-            int point = text.codePointAt(offset);
-            points[index++] = point;
-            offset += Character.charCount(point);
-        }
-        return points;
-    }
-
-    private static int[][] buildDistanceMatrix(int[] left, int[] right) {
+    private static int[][] buildDistanceMatrix(char[] left, char[] right) {
         int[][] matrix = new int[left.length + 1][right.length + 1];
         for (int i = 0; i <= left.length; i++) {
             matrix[i][0] = i;
@@ -51,5 +35,5 @@ public final class Levenshtein {
         return matrix;
     }
 
-    public record Result(int distance, int leftCodePointLength, int rightCodePointLength, double score) {}
+    public record Result(int distance, int leftLength, int rightLength, double score) {}
 }

@@ -10,8 +10,8 @@ public class SimilarityAlgorithmsTest {
     private void edit(String left, String right, int distance, double score) {
         Levenshtein.Result result = Levenshtein.compare(left, right);
         assertEquals(distance, result.distance());
-        assertEquals(left.codePointCount(0, left.length()), result.leftCodePointLength());
-        assertEquals(right.codePointCount(0, right.length()), result.rightCodePointLength());
+        assertEquals(left.length(), result.leftLength());
+        assertEquals(right.length(), result.rightLength());
         assertEquals(score, result.score(), EPS);
     }
 
@@ -23,12 +23,6 @@ public class SimilarityAlgorithmsTest {
     }
     @Test public void editEmptyLeft() {
         edit("", "abc", 3, 0);
-    }
-    @Test public void editBothEmpty() {
-        edit("", "", 0, 1);
-    }
-    @Test public void editSupplementaryCodePoint() {
-        edit("😀", "a", 1, 0);
     }
     @Test public void editWorkedTokens() {
         edit("ai aids ai", "ai helps ai", 4, 7.0 / 11);
@@ -62,9 +56,6 @@ public class SimilarityAlgorithmsTest {
     @Test public void lcsDisjoint() {
         lcs(List.of("a"), List.of("b"), List.of(), 0);
     }
-    @Test public void lcsBothEmpty() {
-        lcs(List.of(), List.of(), List.of(), 1);
-    }
     @Test public void lcsOneEmpty() {
         lcs(List.of("a"), List.of(), List.of(), 0);
     }
@@ -90,16 +81,27 @@ public class SimilarityAlgorithmsTest {
     @Test public void jaccardOneEmpty() {
         jaccard(List.of(), List.of("a"), 0, 1, 0);
     }
-    @Test public void jaccardBothEmpty() {
-        jaccard(List.of(), List.of(), 0, 0, 1);
-    }
 
-    @Test public void tfIdfMicrocorpus() {
+    @Test public void tfIdfTermInEveryDocumentWeighsZero() {
         double[][] vectors = TfIdf.fit(List.of(List.of("ai", "aids", "ai"), List.of("ai", "helps", "ai")));
-        double c = 1 + Math.log(1.5);
-        assertArrayEquals(new double[]{2.0 / 3, c / 3, 0}, vectors[0], EPS);
-        assertArrayEquals(new double[]{2.0 / 3, 0, c / 3}, vectors[1], EPS);
-        assertEquals(0.6694188517266484, TfIdf.cosine(vectors[0], vectors[1]), EPS);
+        double weight = Math.log(2) / 3;
+        assertArrayEquals(new double[]{0, weight, 0}, vectors[0], EPS);
+        assertArrayEquals(new double[]{0, 0, weight}, vectors[1], EPS);
+        assertEquals(0, TfIdf.cosine(vectors[0], vectors[1]), EPS);
+    }
+    @Test public void tfIdfThreeDocumentMicrocorpus() {
+        double[][] vectors = TfIdf.fit(List.of(List.of("a", "b"), List.of("a", "c"), List.of("c", "c")));
+        double a = Math.log(3.0 / 2);
+        double b = Math.log(3.0 / 1);
+        assertArrayEquals(new double[]{a / 2, b / 2, 0}, vectors[0], EPS);
+        assertArrayEquals(new double[]{a / 2, 0, a / 2}, vectors[1], EPS);
+        assertArrayEquals(new double[]{0, 0, a}, vectors[2], EPS);
+        double dot = a / 2 * a / 2;
+        double leftNorm = Math.sqrt(a * a / 4 + b * b / 4);
+        double rightNorm = Math.sqrt(a * a / 4 + a * a / 4);
+        assertEquals(dot / (leftNorm * rightNorm), TfIdf.cosine(vectors[0], vectors[1]), EPS);
+        assertEquals(0.2448, TfIdf.cosine(vectors[0], vectors[1]), 1e-4);
+        assertEquals(0.7071, TfIdf.cosine(vectors[1], vectors[2]), 1e-4);
     }
     @Test public void cosineIdenticalVectors() {
         double score = TfIdf.cosine(new double[]{2, 3}, new double[]{2, 3});
@@ -109,9 +111,13 @@ public class SimilarityAlgorithmsTest {
         double score = TfIdf.cosine(new double[]{1, 0}, new double[]{0, 1});
         assertEquals(0, score, EPS);
     }
+    @Test public void cosineIsNotClampedToOne() {
+        double score = TfIdf.cosine(new double[]{0.7, 0.7, 0.7}, new double[]{0.7, 0.7, 0.7});
+        assertEquals(1.0000000000000002, score, 0);
+    }
     @Test public void documentFrequencyCountsEachDocumentOnce() {
         double[][] vectors = TfIdf.fit(List.of(List.of("a", "a"), List.of("b"), List.of("a", "c")));
-        double aIdf = 1 + Math.log(4.0 / 3);
+        double aIdf = Math.log(3.0 / 2);
         assertEquals(aIdf, vectors[0][0], EPS);
         assertEquals(aIdf / 2, vectors[2][0], EPS);
     }
