@@ -12,6 +12,17 @@ java {
     }
 }
 
+sourceSets {
+    generator {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+    test {
+        compileClasspath += sourceSets.generator.output + sourceSets.generator.compileClasspath
+        runtimeClasspath += sourceSets.generator.output + sourceSets.generator.runtimeClasspath
+    }
+}
+
 repositories {
     mavenCentral()
 }
@@ -19,8 +30,9 @@ repositories {
 dependencies {
     implementation platform('org.springframework.boot:spring-boot-dependencies:4.1.1')
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-    implementation 'com.microsoft.onnxruntime:onnxruntime:1.31.1'
-    implementation 'ai.djl.huggingface:tokenizers:0.39.0'
+    generatorImplementation platform('org.springframework.boot:spring-boot-dependencies:4.1.1')
+    generatorImplementation 'com.microsoft.onnxruntime:onnxruntime:1.31.1'
+    generatorImplementation 'ai.djl.huggingface:tokenizers:0.39.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
@@ -31,4 +43,14 @@ tasks.named('test') {
         events 'passed', 'failed', 'skipped'
         exceptionFormat = 'full'
     }
+}
+
+tasks.register('generateGeminiEmbeddings', JavaExec) {
+    classpath = sourceSets.generator.runtimeClasspath
+    mainClass = 'com.neguentropia.similarity.GeminiEmbeddingGenerator'
+}
+
+tasks.register('generateLocalEmbeddings', JavaExec) {
+    classpath = sourceSets.generator.runtimeClasspath
+    mainClass = 'com.neguentropia.similarity.LocalEmbeddingGenerator'
 }

@@ -16,29 +16,23 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 public class EmbeddingEndpointTest {
-    public static final Map<String, Object> GEMINI = Map.of("id", "synthetic-gemini", "modelId", "gemini-embedding-2",
-            "revision", "2", "dimension", 3, "task", "sentence similarity",
-            "templateVersion", "task: sentence similarity | query: {text}",
-            "normalization", "provider-normalized", "inputLengthVerification", "verified");
-    public static final Map<String, Object> LOCAL = Map.of("id", "synthetic-local",
-            "modelId", "intfloat/multilingual-e5-small", "revision", "614241f622f53c4eeff9890bdc4f31cfecc418b3",
-            "dimension", 3, "task", "query", "templateVersion", "query: {text}",
-            "normalization", "mean-pooling-l2", "inputLengthVerification", "verified");
+    public static final String GEMINI = "synthetic-gemini";
+    public static final String LOCAL = "synthetic-local";
 
     @Autowired public SimilarityController controller;
 
     @DynamicPropertySource public static void configure(DynamicPropertyRegistry registry) throws Exception {
         Path directory = Files.createTempDirectory("synthetic-embeddings-");
         Path manifest = SyntheticManifest.write(directory, SyntheticManifest.create());
-        Path gemini = writeVectors(directory, "gemini.json", GEMINI, 10);
-        Path local = writeVectors(directory, "local.json", LOCAL, 20);
+        Path gemini = writeVectors(directory, "gemini.json", GEMINI);
+        Path local = writeVectors(directory, "local.json", LOCAL);
         registry.add("corpus.manifest", manifest::toString);
         registry.add("embeddings.gemini", gemini::toString);
         registry.add("embeddings.local", local::toString);
     }
 
-    public static Path writeVectors(Path directory, String fileName, Map<String, Object> configuration,
-                                    int tokenOffset) throws Exception {
+    public static Path writeVectors(Path directory, String fileName, String model)
+            throws Exception {
         ArrayList<Object> papers = new ArrayList<>();
         for (int i = 1; i <= 20; i++) {
             List<Double> values = List.of(1.0, 2.0, 0.0);
@@ -48,18 +42,18 @@ public class EmbeddingEndpointTest {
             if (i == 3) {
                 values = List.of(-1.0, -2.0, 0.0);
             }
-            papers.add(Map.of("id", "paper-%02d".formatted(i), "inputTokenCount", i + tokenOffset, "values", values));
+            papers.add(Map.of("id", "paper-%02d".formatted(i), "values", values));
         }
         return Files.writeString(directory.resolve(fileName), SyntheticManifest.JSON.writeValueAsString(
-                Map.of("configuration", configuration, "papers", papers)));
+                Map.of("model", model, "papers", papers)));
     }
 
-    private void assertEmbeddingShape(String method, Map<String, Object> configuration, int tokenOffset) {
+    private void assertEmbeddingShape(String method, String model) {
         var response = controller.compare(SyntheticManifest.JSON.valueToTree(Map.of(
                 "paperIds", List.of("paper-03", "paper-02", "paper-01"), "methods", List.of(method))));
         assertEquals(200, response.getStatusCode().value());
         JsonNode json = SyntheticManifest.JSON.valueToTree(response.getBody());
-        assertEquals(5, json.size());
+        assertEquals(3, json.size());
         assertEquals(SyntheticManifest.JSON.valueToTree(List.of("paper-01", "paper-02", "paper-03")), json.path("paperIds"));
         assertEquals(3, json.path("pairs").size());
         double[] scores = {0.8, -1.0, -0.8};
@@ -70,50 +64,22 @@ public class EmbeddingEndpointTest {
             assertEquals(expectedPairs[pairIndex][1], pair.path("right").asText());
             assertEquals(1, pair.path("results").size());
             JsonNode result = pair.path("results").get(0);
-            assertEquals(7, result.size());
+            assertEquals(6, result.size());
             assertEquals(method, result.path("method").asText());
             assertEquals("embedding", result.path("representation").asText());
             assertEquals("cosine", result.path("metric").asText());
             assertEquals(scores[pairIndex++], result.path("score").asDouble(), 1e-12);
-            assertEquals(configuration.get("id"), result.path("modelConfigurationId").asText());
+            assertEquals(model, result.path("model").asText());
             assertEquals(3, result.path("dimension").asInt());
-            assertTrue(result.path("cosineMilliseconds").isNumber());
-            assertTrue(result.path("cosineMilliseconds").asDouble() >= 0);
-        }
-        assertEquals(1, json.path("embeddingRuns").size());
-        JsonNode run = json.path("embeddingRuns").get(0);
-        assertEquals(3, run.size());
-        assertEquals(method, run.path("method").asText());
-        assertEquals(SyntheticManifest.JSON.valueToTree(configuration), run.path("configuration"));
-        assertEquals(3, run.path("papers").size());
-        for (int i = 0; i < 3; i++) {
-            JsonNode paper = run.path("papers").get(i);
-            assertEquals(2, paper.size());
-            assertEquals("paper-%02d".formatted(i + 1), paper.path("paperId").asText());
-            assertEquals(i + 1 + tokenOffset, paper.path("inputTokenCount").asInt());
         }
     }
 
-    @Test public void returnsGeminiPairsAndRunInManifestOrder() {
-        assertEmbeddingShape("gemini-embeddings", GEMINI, 10);
+    @Test public void returnsGeminiPairsInManifestOrder() {
+        assertEmbeddingShape("gemini-embeddings", GEMINI);
     }
 
-    @Test public void returnsLocalPairsAndRunInManifestOrder() {
-        assertEmbeddingShape("local-embeddings", LOCAL, 20);
-    }
-
-    @Test public void embeddingRunsFollowRequestedMethodOrder() {
-        for (List<String> methods : List.of(List.of("gemini-embeddings", "local-embeddings"),
-                List.of("local-embeddings", "gemini-embeddings"))) {
-            var response = controller.compare(SyntheticManifest.JSON.valueToTree(Map.of(
-                    "paperIds", List.of("paper-01", "paper-02"), "methods", methods)));
-            assertEquals(200, response.getStatusCode().value());
-            JsonNode json = SyntheticManifest.JSON.valueToTree(response.getBody());
-            assertEquals(methods.size(), json.path("embeddingRuns").size());
-            for (int i = 0; i < methods.size(); i++) {
-                assertEquals(methods.get(i), json.path("embeddingRuns").get(i).path("method").asText());
-            }
-        }
+    @Test public void returnsLocalPairsInManifestOrder() {
+        assertEmbeddingShape("local-embeddings", LOCAL);
     }
 
     @Test public void preservesMixedMethodOrder() {

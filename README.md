@@ -37,23 +37,16 @@ The application listens on `0.0.0.0` inside the container. `PORT` changes the in
 {"status":"up","corpusState":"unavailable"}
 ```
 
-The HTTP contract is defined in an OpenAPI specification maintained outside this repository. The catalog `GET /api/papers`, the detail `GET /api/papers/{id}` and the ranking `POST /api/ranking` are implemented. The ranking receives an empty JSON object, sorts the same frequency list of the 20 abstracts with Counting, Radix and Bucket, checks that the three complete lists match and returns the top 15 and the time of each method. The explanations are in [ranking report](docs/Ranking%20de%20T%C3%A9rminos%20Mediante%20Algoritmos%20de%20Ordenamiento%20no%20Comparativos.docx). `POST /api/similarity` compares 2–20 distinct papers using Levenshtein, longest common subsequence (LCS), TF-IDF cosine and Jaccard. It accepts `paperIds` and `methods`, returns every selected pair in manifest order and preserves the requested method order. TF-IDF is fitted once over all twenty abstracts. Each result includes its score, explanatory data and kernel computation time. `gemini-embeddings` compares pre-generated Gemini Embedding 2 vectors using explicit Java cosine in [-1,1]. Results identify the model configuration and dimension, with cosine-only timings; `embeddingRuns` reports the configuration and original input token counts for the selected papers in manifest order. Requests never call the provider. `local-embeddings` does the same with pre-generated vectors from `intfloat/multilingual-e5-small`. Without a valid vector file, the requested embedding method returns HTTP 503 `PROVIDER_UNAVAILABLE`. No partial results are returned. Clustering and search are not implemented, and the corpus is not downloaded.
+The HTTP contract is defined in an OpenAPI specification maintained outside this repository. The catalog `GET /api/papers`, the detail `GET /api/papers/{id}` and the ranking `POST /api/ranking` are implemented. The ranking receives an empty JSON object, sorts the same frequency list of the 20 abstracts with Counting, Radix and Bucket, checks that the three complete lists match and returns the top 15 and the time of each method. The explanations are in [ranking report](docs/Ranking%20de%20T%C3%A9rminos%20Mediante%20Algoritmos%20de%20Ordenamiento%20no%20Comparativos.docx). `POST /api/similarity` compares 2–20 distinct papers using Levenshtein, longest common subsequence (LCS), TF-IDF cosine and Jaccard. It accepts `paperIds` and `methods`, returns every selected pair in manifest order and preserves the requested method order. TF-IDF is fitted once over all twenty abstracts. The response contains only `paperIds`, `methods` and `pairs`; each result includes its score and explanatory data. `gemini-embeddings` compares pre-generated Gemini Embedding 2 vectors using explicit Java cosine in [-1,1]; embedding results identify the `model` and `dimension`. Requests never call the provider. `local-embeddings` does the same with pre-generated vectors from `intfloat/multilingual-e5-small`. Without a valid vector file, the requested embedding method returns HTTP 503 `PROVIDER_UNAVAILABLE`. No partial results are returned. Clustering and search are not implemented, and the corpus is not downloaded.
 
 ### Gemini vector generation
 
-`GeminiEmbeddingGenerator` is a standalone command, separate from the HTTP server. With corpus transfer permission and an API budget, generate one private vector file using `GEMINI_API_KEY` exported in the invoking shell. The command reads the key only from the environment, never from a file. Each complete NFC abstract is prefixed with `task: sentence similarity | query: `, counted with the model's `countTokens` endpoint (maximum 8192), then embedded with `gemini-embedding-2` (3072 dimensions). It stops on errors without retries; it never truncates or substitutes a provider.
+`GeminiEmbeddingGenerator` is a standalone command, separate from the HTTP server and from the server jar: it lives in the `generator` source set. With corpus transfer permission and an API budget, generate one private vector file using `GEMINI_API_KEY` exported in the invoking shell. The command reads the key only from the environment, never from a file. Each complete NFC abstract is prefixed with `task: sentence similarity | query: `, counted with the model's `countTokens` endpoint (maximum 8192), then embedded with `gemini-embedding-2` (3072 dimensions). It stops on errors without retries; it never truncates or substitutes a provider.
 
-After building the runnable image, run from this directory with the corpus and a private writable output directory available at the paths below:
+The vector file is `{"model": "gemini-embedding-2", "papers": [{"id": "paper-01", "values": [...]}, ...]}`, one record per corpus paper in corpus order; the dimension is the length of `values`. Run from this directory with the corpus and a private writable output path:
 
 ```sh
-docker run --rm --user "$(id -u):$(id -g)" --entrypoint java \
-  -e GEMINI_API_KEY \
-  --mount "type=bind,src=$CORPUS_FILE,dst=/data/corpus.json,readonly" \
-  --mount "type=bind,src=$VECTOR_DIRECTORY,dst=/vectors" \
-  neguentropia-backend \
-  -Dloader.main=com.neguentropia.similarity.GeminiEmbeddingGenerator \
-  -cp /app/application.jar org.springframework.boot.loader.launch.PropertiesLauncher \
-  /data/corpus.json /vectors/gemini.json
+GEMINI_API_KEY=... ./gradlew generateGeminiEmbeddings --args="/path/to/corpus.json /path/to/gemini.json"
 ```
 
 Keep the generated file outside the repository and image. Mount it read-only when starting the server, adding these options before the image name in the runtime command:
@@ -67,17 +60,10 @@ Keep the generated file outside the repository and image. Mount it read-only whe
 
 ### Local vector generation
 
-`LocalEmbeddingGenerator` is a standalone command, separate from the HTTP server. It uses `intfloat/multilingual-e5-small` at revision `614241f622f53c4eeff9890bdc4f31cfecc418b3` (MIT license, 384 dimensions, 512 token limit), run with ONNX Runtime and the model's own tokenizer. Each complete NFC abstract is prefixed with `query: `, tokenized without truncation (more than 512 tokens including special tokens stops the command), then token states are mean-pooled over the attention mask and L2-normalized. It needs no network once the model files are available: `model.onnx` and `tokenizer.json` from the model repository.
+`LocalEmbeddingGenerator` is a standalone command in the `generator` source set, separate from the HTTP server and the server jar (ONNX Runtime and the tokenizer library are generator-only dependencies). It uses `intfloat/multilingual-e5-small` at revision `614241f622f53c4eeff9890bdc4f31cfecc418b3` (MIT license, 384 dimensions, 512 token limit), run with ONNX Runtime and the model's own tokenizer. Each complete NFC abstract is prefixed with `query: `, tokenized without truncation (more than 512 tokens including special tokens stops the command), then token states are mean-pooled over the attention mask and L2-normalized. It needs no network once the model files are available: `model.onnx` and `tokenizer.json` from the model repository. The output uses the same file format as above, with `"model": "intfloat/multilingual-e5-small"`.
 
 ```sh
-docker run --rm --user "$(id -u):$(id -g)" --network none --entrypoint java \
-  --mount "type=bind,src=$CORPUS_FILE,dst=/data/corpus.json,readonly" \
-  --mount "type=bind,src=$MODEL_DIRECTORY,dst=/model,readonly" \
-  --mount "type=bind,src=$VECTOR_DIRECTORY,dst=/vectors" \
-  neguentropia-backend \
-  -Dloader.main=com.neguentropia.similarity.LocalEmbeddingGenerator \
-  -cp /app/application.jar org.springframework.boot.loader.launch.PropertiesLauncher \
-  /data/corpus.json /model/model.onnx /model/tokenizer.json /vectors/local.json
+./gradlew generateLocalEmbeddings --args="/path/to/corpus.json /path/to/model.onnx /path/to/tokenizer.json /path/to/local.json"
 ```
 
 Mount the generated file read-only when starting the server, adding these options before the image name:

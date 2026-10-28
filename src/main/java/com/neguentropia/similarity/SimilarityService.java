@@ -3,7 +3,6 @@ package com.neguentropia.similarity;
 import com.neguentropia.corpus.CorpusLoader.Paper;
 import com.neguentropia.corpus.CorpusService;
 import com.neguentropia.corpus.TextPreparation;
-import com.neguentropia.ranking.RankingService;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -81,66 +80,42 @@ public class SimilarityService {
                 pairs.add(new SimilarityPair(paperIds.get(i), paperIds.get(j), results));
             }
         }
-        ArrayList<Object> embeddingRuns = new ArrayList<>();
-        for (String method : methods) {
-            if (method.equals("gemini-embeddings") || method.equals("local-embeddings")) {
-                EmbeddingVectors loaded = embeddingsFor(method);
-                ArrayList<VectorAcquisition> acquisitions = new ArrayList<>();
-                for (int index : indices) {
-                    EmbeddingVectors.PaperVector paper = loaded.papers.get(index);
-                    acquisitions.add(new VectorAcquisition(paper.id(), paper.inputTokenCount()));
-                }
-                embeddingRuns.add(new EmbeddingRun(method, loaded.configuration, acquisitions));
-            }
-        }
-        return new SimilarityResponse(RankingService.PREPROCESSING, paperIds, methods, pairs, embeddingRuns);
+        return new SimilarityResponse(paperIds, methods, pairs);
     }
 
     private Object compareMethod(int left, int right, String method) {
         if (method.equals("levenshtein")) {
             String leftText = joinedTokens.get(left);
             String rightText = joinedTokens.get(right);
-            long start = System.nanoTime();
             Levenshtein.Result result = Levenshtein.compare(leftText, rightText);
-            long elapsed = System.nanoTime() - start;
             return new LevenshteinResult(method, "joined-token-code-points", result.score(), result.distance(),
-                    result.leftCodePointLength(), result.rightCodePointLength(), elapsed / 1_000_000.0);
+                    result.leftCodePointLength(), result.rightCodePointLength());
         }
         if (method.equals("lcs")) {
             List<String> leftTokens = tokens.get(left);
             List<String> rightTokens = tokens.get(right);
-            long start = System.nanoTime();
             LongestCommonSubsequence.Result result = LongestCommonSubsequence.compare(leftTokens, rightTokens);
-            long elapsed = System.nanoTime() - start;
             return new LcsResult(method, "tokens", result.score(), result.length(), result.subsequence(),
-                    leftTokens.size(), rightTokens.size(), elapsed / 1_000_000.0);
+                    leftTokens.size(), rightTokens.size());
         }
         if (method.equals("tf-idf-cosine")) {
             double[] leftVector = vectors[left];
             double[] rightVector = vectors[right];
-            long start = System.nanoTime();
             double score = TfIdf.cosine(leftVector, rightVector);
-            long elapsed = System.nanoTime() - start;
-            return new TfIdfResult(method, "global-tf-idf", score, leftVector.length, vectors.length,
-                    elapsed / 1_000_000.0);
+            return new TfIdfResult(method, "global-tf-idf", score, leftVector.length, vectors.length);
         }
         if (method.equals("jaccard")) {
             List<String> leftTokens = tokens.get(left);
             List<String> rightTokens = tokens.get(right);
-            long start = System.nanoTime();
             Jaccard.Result result = Jaccard.compare(leftTokens, rightTokens);
-            long elapsed = System.nanoTime() - start;
-            return new JaccardResult(method, "token-sets", result.score(), result.intersectionSize(), result.unionSize(),
-                    elapsed / 1_000_000.0);
+            return new JaccardResult(method, "token-sets", result.score(), result.intersectionSize(), result.unionSize());
         }
         EmbeddingVectors loaded = embeddingsFor(method);
         double[] leftVector = loaded.papers.get(left).values();
         double[] rightVector = loaded.papers.get(right).values();
-        long start = System.nanoTime();
         double score = TfIdf.cosine(leftVector, rightVector);
-        long elapsed = System.nanoTime() - start;
-        return new EmbeddingResult(method, "embedding", "cosine", score, loaded.configuration.id(),
-                loaded.configuration.dimension(), elapsed / 1_000_000.0);
+        return new EmbeddingResult(method, "embedding", "cosine", score, loaded.model,
+                leftVector.length);
     }
 
     private EmbeddingVectors embeddingsFor(String method) {
@@ -151,19 +126,14 @@ public class SimilarityService {
     }
 
     public record LevenshteinResult(String method, String representation, double score, int distance,
-                                    int leftCodePointLength, int rightCodePointLength, double computeMilliseconds) {}
+                                    int leftCodePointLength, int rightCodePointLength) {}
     public record LcsResult(String method, String representation, double score, int length, List<String> subsequence,
-                            int leftTokenCount, int rightTokenCount, double computeMilliseconds) {}
-    public record TfIdfResult(String method, String representation, double score, int dimension, int fitPaperCount,
-                              double computeMilliseconds) {}
+                            int leftTokenCount, int rightTokenCount) {}
+    public record TfIdfResult(String method, String representation, double score, int dimension, int fitPaperCount) {}
     public record JaccardResult(String method, String representation, double score, int intersectionSize,
-                                int unionSize, double computeMilliseconds) {}
-    public record EmbeddingResult(String method, String representation, String metric, double score,
-                                  String modelConfigurationId, int dimension, double cosineMilliseconds) {}
-    public record VectorAcquisition(String paperId, int inputTokenCount) {}
-    public record EmbeddingRun(String method, EmbeddingVectors.ModelConfiguration configuration,
-                               List<VectorAcquisition> papers) {}
+                                int unionSize) {}
+    public record EmbeddingResult(String method, String representation, String metric, double score, String model,
+                                  int dimension) {}
     public record SimilarityPair(String left, String right, List<Object> results) {}
-    public record SimilarityResponse(RankingService.Preprocessing preprocessing, List<String> paperIds, List<String> methods,
-                                     List<SimilarityPair> pairs, List<Object> embeddingRuns) {}
+    public record SimilarityResponse(List<String> paperIds, List<String> methods, List<SimilarityPair> pairs) {}
 }

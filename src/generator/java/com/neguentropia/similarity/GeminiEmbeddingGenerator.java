@@ -17,9 +17,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 public final class GeminiEmbeddingGenerator {
     private static final JsonMapper JSON = JsonMapper.builder().build();
-    private static final String MODEL = "models/gemini-embedding-2";
+    private static final String MODEL_NAME = "gemini-embedding-2";
+    private static final String MODEL = "models/" + MODEL_NAME;
     private static final String ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/" + MODEL;
-    private static final int DIMENSION = 3072;
     private static final int TOKEN_LIMIT = 8192;
 
     private GeminiEmbeddingGenerator() {
@@ -48,20 +48,17 @@ public final class GeminiEmbeddingGenerator {
 
     private static void generate(Path manifest, Path output, String key) throws Exception {
         List<CorpusLoader.Paper> papers = new CorpusLoader(JSON).load(manifest);
-        ArrayList<EmbeddingVectors.PaperVector> vectors = new ArrayList<>();
+        ArrayList<Map<String, Object>> vectors = new ArrayList<>();
         try (HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build()) {
             for (CorpusLoader.Paper paper : papers) {
                 String input = formattedInput(paper.originalAbstract());
                 String tokenResponse = post(client, "countTokens", countTokensBody(input), key);
-                int count = parseTokenCount(tokenResponse);
+                parseTokenCount(tokenResponse);
                 double[] values = parseEmbedding(post(client, "embedContent", embedContentBody(input), key));
-                vectors.add(new EmbeddingVectors.PaperVector(paper.id(), count, values));
+                vectors.add(Map.of("id", paper.id(), "values", values));
             }
         }
-        EmbeddingVectors.ModelConfiguration configuration = new EmbeddingVectors.ModelConfiguration(
-                "gemini-embedding-2-sentence-similarity", "gemini-embedding-2", "2", DIMENSION,
-                "sentence similarity", "task: sentence similarity | query: {text}", "provider-normalized", "verified");
-        Files.writeString(output, JSON.writeValueAsString(Map.of("configuration", configuration, "papers", vectors)));
+        Files.writeString(output, JSON.writeValueAsString(Map.of("model", MODEL_NAME, "papers", vectors)));
     }
 
     private static String post(HttpClient client, String operation, String body, String key) throws Exception {

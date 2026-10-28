@@ -17,7 +17,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 public final class LocalEmbeddingGenerator {
     private static final JsonMapper JSON = JsonMapper.builder().build();
-    private static final int DIMENSION = 384;
+    private static final String MODEL_NAME = "intfloat/multilingual-e5-small";
     private static final int TOKEN_LIMIT = 512;
 
     private LocalEmbeddingGenerator() {
@@ -41,7 +41,7 @@ public final class LocalEmbeddingGenerator {
 
     private static void generate(Path manifest, String model, Path tokenizerFile, Path output) throws Exception {
         List<CorpusLoader.Paper> papers = new CorpusLoader(JSON).load(manifest);
-        ArrayList<EmbeddingVectors.PaperVector> vectors = new ArrayList<>();
+        ArrayList<Map<String, Object>> vectors = new ArrayList<>();
         Map<String, String> options = Map.of("truncation", "false", "padding", "false");
         OrtEnvironment environment = OrtEnvironment.getEnvironment();
         try (HuggingFaceTokenizer tokenizer = HuggingFaceTokenizer.newInstance(tokenizerFile, options);
@@ -49,18 +49,14 @@ public final class LocalEmbeddingGenerator {
             for (CorpusLoader.Paper paper : papers) {
                 Encoding encoding = tokenizer.encode(formattedInput(paper.originalAbstract()));
                 long[] ids = encoding.getIds();
-                int count = requireWithinLimit(ids.length);
+                requireWithinLimit(ids.length);
                 long[] mask = encoding.getAttentionMask();
                 double[][] states = run(environment, session, ids, mask);
                 double[] values = normalize(meanPool(states, mask));
-                vectors.add(new EmbeddingVectors.PaperVector(paper.id(), count, values));
+                vectors.add(Map.of("id", paper.id(), "values", values));
             }
         }
-        EmbeddingVectors.ModelConfiguration configuration = new EmbeddingVectors.ModelConfiguration(
-                "multilingual-e5-small-query-mean", "intfloat/multilingual-e5-small",
-                "614241f622f53c4eeff9890bdc4f31cfecc418b3", DIMENSION, "query", "query: {text}",
-                "mean-pooling-l2", "verified");
-        Files.writeString(output, JSON.writeValueAsString(Map.of("configuration", configuration, "papers", vectors)));
+        Files.writeString(output, JSON.writeValueAsString(Map.of("model", MODEL_NAME, "papers", vectors)));
     }
 
     private static double[][] run(OrtEnvironment environment, OrtSession session, long[] ids, long[] mask)
